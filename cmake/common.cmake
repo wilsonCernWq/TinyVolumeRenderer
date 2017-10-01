@@ -90,9 +90,13 @@ ENDIF()
 OPTION(ENABLE_GLFW "Enable GLFW Library" ON)
 IF(ENABLE_GLFW)
   IF(EXISTS ${PROJECT_SOURCE_DIR}/external/glfw)
-    ADD_SUBDIRECTORY(${PROJECT_SOURCE_DIR}/external/glfw)
     INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/external/glfw/include)
-    LIST(APPEND COMMON_LIBS glfw)
+    INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/external/glfw/deps)
+    ADD_SUBDIRECTORY(${PROJECT_SOURCE_DIR}/external/glfw)
+    ADD_LIBRARY(glfw_glad
+      ${GLFW_SOURCE_DIR}/deps/glad/glad.h
+      ${GLFW_SOURCE_DIR}/deps/glad.c)
+    LIST(APPEND COMMON_LIBS glfw glfw_glad)
     ADD_DEFINITIONS(-DUSE_GLFW)
   ENDIF()
 ENDIF(ENABLE_GLFW)
@@ -105,10 +109,6 @@ IF(EXISTS ${PROJECT_SOURCE_DIR}/external/glm)
   INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/external/glm)
   ADD_DEFINITIONS(-DUSE_GLM)
 ENDIF()
-#
-#--- cyCodeBase
-#   https://github.com/cemyuksel/cyCodeBase.git
-INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/external/cyCodeBase)
 #
 #--- lodePNG
 #   http://lodev.org/lodepng/
