@@ -1,9 +1,10 @@
+#version 330 core
+layout(location = 0) in  vec3 vPosition;
+layout(location = 1) in  vec2 vTexCoord;
+out vec2 fTexCoord;
 uniform   mat4 MVP;
-attribute vec3 vCol;
-attribute vec3 vPos;
-varying   vec3 color;
 void main()
 {
-  gl_Position = MVP * vec4(vPos, 1.0);
-  color = vCol;
+  gl_Position = MVP * vec4(vPosition, 1.0);
+  fTexcoord = vTexCoord;
 };
