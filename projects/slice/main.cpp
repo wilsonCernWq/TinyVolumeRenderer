@@ -94,7 +94,12 @@ static const GLfloat uv_buffer_data[] = {
   1.000004f, 1.0f-0.671847f,
   0.667979f, 1.0f-0.335851f
 };
-
+static float quad_buffer_data[] = {
+   1.f, 1.f,0.f,
+  -1.f, 1.f,0.f,
+   1.f,-1.f,0.f,
+  -1.f,-1.f,0.f,
+};
 
 int main(const int argc, const char** argv)
 {
@@ -105,12 +110,14 @@ int main(const int argc, const char** argv)
   // Create Context
   GLFWwindow* window = InitWindow();
 
+  // Load data
+  GLuint texture = loadBMP_custom("uvtemplate.bmp");
+  
   // Compile Simple Shaders
   GLuint program = LoadProgram("vshader.glsl","fshader.glsl");
   ASSERT(program != 0, "Failed to create program");
   
   // Texture
-  GLuint texture = loadBMP_custom("uvtemplate.bmp");
   GLint texture_location = glGetUniformLocation(program, "tex");  
   ASSERT(texture_location != -1, "Failed to find 'tex' location");
       
@@ -127,13 +134,29 @@ int main(const int argc, const char** argv)
   glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer[1]);
   glBufferData(GL_ARRAY_BUFFER, sizeof(uv_buffer_data),
 	       uv_buffer_data, GL_STATIC_DRAW);
-  
+
   GLint vposition_location = glGetAttribLocation(program, "vPosition");
   ASSERT(vposition_location != -1, "Failed to find 'vPosition' location");
   GLint vtexcoord_location = glGetAttribLocation(program, "vTexCoord");
   ASSERT(vtexcoord_location != -1, "Failed to find 'vTexCoord' location");    
   GLint mvp_location = glGetUniformLocation(program, "MVP");
   ASSERT(mvp_location != -1, "Failed to find 'MVP' location");
+
+  // Quad
+  GLuint program_quad = LoadProgram("vshader_quad.glsl","fshader_quad.glsl");
+  ASSERT(program_quad != 0, "Failed to create program");
+  GLuint quad_array;
+  glGenVertexArrays(1, &quad_array);
+  glBindVertexArray(quad_array);
+  GLuint quad_buffer;
+  glGenBuffers(1, &quad_buffer);
+  glBindBuffer(GL_ARRAY_BUFFER, quad_buffer);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(quad_buffer_data),
+	       quad_buffer_data, GL_STATIC_DRAW);
+  GLint vposition_quad_location = glGetAttribLocation(program_quad, "vPosition");
+  ASSERT(vposition_quad_location != -1, "Failed to find 'vPosition' location");
+  GLint texture_quad_location = glGetUniformLocation(program_quad, "tex");  
+  ASSERT(texture_quad_location != -1, "Failed to find 'tex' location");
 
   // FBO
   size_t fbo_width = 640, fbo_height = 480;
@@ -160,13 +183,17 @@ int main(const int argc, const char** argv)
   { fprintf(stderr, "FBO Incomplete!\n"); exit(-1); }
 
   while (!glfwWindowShouldClose(window))
-  {    
+  {
+    // bind data
     glUseProgram(program);
+    glBindVertexArray(vertex_array);
+    
     glUniformMatrix4fv(mvp_location, 1, GL_FALSE, GetMVPMatrix());
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, texture);    
     glUniform1i(texture_location, 0);
+    
     glEnableVertexAttribArray(vposition_location);
     glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer[0]);
     glVertexAttribPointer(vposition_location, 3, GL_FLOAT, GL_FALSE, 0, (void*) 0);
@@ -175,15 +202,25 @@ int main(const int argc, const char** argv)
     glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer[1]);
     glVertexAttribPointer(vtexcoord_location, 2, GL_FLOAT, GL_FALSE, 0, (void*) 0);
 
-    //glBindFramebuffer(GL_FRAMEBUFFER, FramebufferName);
-    //glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);    
-    //glDrawArrays(GL_TRIANGLES, 0, 12 * 3); // 12*3 indices starting at 0 -> 12 triangles
-
+    glBindFramebuffer(GL_FRAMEBUFFER, FramebufferName);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);    
+    glDrawArrays(GL_TRIANGLES, 0, 12 * 3); // 12*3 indices starting at 0 -> 12 triangles
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
+    // program 2
+    glUseProgram(program_quad);
+    glBindVertexArray(quad_array);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, fboColorBuffer);    
+    glUniform1i(texture_quad_location, 0);
+    
+    glEnableVertexAttribArray(vposition_quad_location);
+    glBindBuffer(GL_ARRAY_BUFFER, quad_buffer);
+    glVertexAttribPointer(vposition_quad_location, 3, GL_FLOAT, GL_FALSE, 0, (void*) 0);
+    
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glDrawArrays(GL_TRIANGLES, 0, 12 * 3); // 12*3 indices starting at 0 -> 12 triangles
-
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4); // 12*3 indices starting at 0 -> 12 triangles
+    
     glfwSwapBuffers(window);
     glfwPollEvents();
   }
