@@ -1,6 +1,6 @@
 #version 330 core
-in  vec3 vPosition;
-layout(location = 1) in  vec2 vTexCoord;
+in vec3 vPosition;
+in vec2 vTexCoord;
 out vec2 fTexCoord;
 uniform mat4 MVP;
 void main()
