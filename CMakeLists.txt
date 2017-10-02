@@ -22,13 +22,13 @@ if (NOT CONFIGFOUND)
 endif()
 #
 # load required libraries
-INCLUDE(cmake/common.cmake)
+include(cmake/common.cmake)
 #
 # load projects
-SET(projdir ${CMAKE_CURRENT_LIST_DIR}/projects)
-FILE(GLOB children RELATIVE ${projdir} ${projdir}/*)
-FOREACH(child ${children})
-  IF(IS_DIRECTORY ${projdir}/${child})
+set(projdir ${CMAKE_CURRENT_LIST_DIR}/projects)
+file(GLOB children RELATIVE ${projdir} ${projdir}/*)
+foreach(child ${children})
+  if(IS_DIRECTORY ${projdir}/${child})
       add_subdirectory(${projdir}/${child})
-  ENDIF()
-ENDFOREACH()
+  endif()
+endforeach()

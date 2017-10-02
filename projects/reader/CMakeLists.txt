@@ -1,0 +1,29 @@
+#
+# initialize project
+get_filename_component(PID ${CMAKE_CURRENT_SOURCE_DIR} NAME)
+string(TOLOWER ${PID} PID)
+#
+# install dlls or shader
+file(GLOB SHADERS "*.glsl")
+set(COPYLIST ${COMMON_DLLS} ${SHADERS})
+if(EXECUTABLE_OUTPUT_PATH)
+  DeployRepo("${COPYLIST}" "${EXECUTABLE_OUTPUT_PATH}")
+else()
+  DeployRepo("${COPYLIST}" "${CMAKE_BINARY_DIR}")
+endif()
+#
+# include sources
+file(GLOB CXX  "*.cpp")
+file(GLOB HXX  "*.hpp")
+#
+# add library
+add_library(volume_reader ${CXX} ${HXX})
+target_link_libraries(volume_reader ${COMMON_LIBS})
+set_target_properties(volume_reader
+  PROPERTIES
+  ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}"
+  LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}"
+  RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}"
+  CXX_STANDARD 11)
+SET(VolumeReader_INCLUDE_DIRS ${CMAKE_CURRENT_LIST_DIR} PARENT_SCOPE)
+SET(VolumeReader_LIBRARIES volume_reader PARENT_SCOPE)

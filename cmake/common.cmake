@@ -116,6 +116,10 @@ ADD_SUBDIRECTORY(${PROJECT_SOURCE_DIR}/external/lodepng)
 INCLUDE_DIRECTORIES(${LodePNG_INCLUDE_DIR})
 LIST(APPEND COMMON_LIBS ${LodePNG_LIBRARIES})
 #
+#--- rapid JSON
+#
+INCLUDE_DIRECTORIES("${PROJECT_SOURCE_DIR}/external/rapidjson/include")
+#
 #----------------------------------------------------------------------------
 #
 #--- OpenMP
