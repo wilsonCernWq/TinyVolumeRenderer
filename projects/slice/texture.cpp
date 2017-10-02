@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "volume_reader.hpp"
 
 GLuint loadBMP_custom(const char * imagepath){
 
@@ -88,4 +89,83 @@ GLuint loadBMP_custom(const char * imagepath){
 
   // Return the ID of the texture we just created
   return textureID;
+}
+
+
+GLuint loadRAW_custom(const char * volumepath) {
+  int data_type, data_size, data_dim[3];
+  void* data_ptr = NULL;
+  ReadVolume(volumepath, data_type, data_size,
+	     data_dim[0], data_dim[1], data_dim[2], data_ptr);
+
+  // for (int x = 0; x < data_dim[0]; ++x) {
+  //   for (int y = 0; y < data_dim[1]; ++y) {
+  //     for (int z = 0; z < data_dim[2]; ++z) {
+  // 	int idx = z * data_dim[1] * data_dim[0] + y * data_dim[1] + x;
+  // 	fprintf(stdout, "%i\n", ((uint8_t*)data_ptr)[idx]);
+  //     }
+  //   }
+  // }
+
+  GLint internal_format;
+  GLenum internal_type;
+  switch (data_type) {
+  case (UCHAR):
+    internal_format = GL_R8;
+    break;
+  case (CHAR):
+    internal_format = GL_R8;
+    break;
+  case (UINT8):
+    internal_format = GL_R8UI;
+    break;
+  case (UINT16):
+    internal_format = GL_R16UI;
+    break;
+  case (UINT32):
+    internal_format = GL_R32UI;
+    break;
+  case (UINT64):
+    fprintf(stderr, "Error: Cannot handle this type %i", data_type);
+    exit(-1);
+  case (INT8):
+    internal_format = GL_R8I;
+    break;
+  case (INT16):
+    internal_format = GL_R16I;
+    break;
+  case (INT32):
+    internal_format = GL_R32I;
+    break;
+  case (FLOAT16):
+    internal_format = GL_R16F;
+    break;    
+  case (FLOAT32):
+    internal_format = GL_R32F;
+    break;
+  case (DOUBLE64):
+    fprintf(stderr, "Error: Cannot handle this type %i", data_type);
+    exit(-1);
+  default:
+    fprintf(stderr, "Error: Unrecognized type %i", data_type);
+    exit(-1);
+  }
+
+  // // Create one OpenGL texture
+  // GLuint textureID;
+  // glGenTextures(1, &textureID);       
+  // glBindTexture(GL_TEXTURE_3D, textureID);
+  // glTexImage3D(GL_TEXTURE_3D, 0, GL_RED,
+  // 	       width, height, 0, GL_BGR, GL_UNSIGNED_BYTE, data);
+
+  // // OpenGL has now copied the data. Free our own version
+  // delete [] data;
+
+  // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+  // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+  // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+  // glGenerateMipmap(GL_TEXTURE_2D);
+
+
 }

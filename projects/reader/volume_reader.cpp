@@ -128,9 +128,14 @@ bool ParseRaw(void*& data_ptr, int& data_size)
   return true;
 }
 
-bool ReadVolume(const char* fname, int& data_type, int& data_size, void*& data_ptr)
+bool ReadVolume
+(const char* fname, int& data_type, int& data_size,
+ int& data_X, int& data_Y, int& data_Z, void*& data_ptr)
 {
   if (!ParseJSON(fname)) { return false; };
   if (!ParseRaw(data_ptr, data_size)) { return false; };
-  return false;
+  data_X = VolumeInfo::size.x;
+  data_Y = VolumeInfo::size.y;
+  data_Z = VolumeInfo::size.z;
+  return true;
 }

@@ -15,10 +15,13 @@
 #define INT16    8
 #define INT32    9
 #define INT64    10
-#define FLOAT32  11
-#define DOUBLE64 12
+#define FLOAT16  11
+#define FLOAT32  12
+#define DOUBLE64 13
 
-bool ReadVolume(const char* fname, int& data_type, int& data_size, void*& data_ptr);
+bool ReadVolume
+(const char* fname, int& data_type, int& data_size,
+ int& data_X, int& data_Y, int& data_Z, void*& data_ptr);
 
 inline size_t SizeOf(int data_type)
 {

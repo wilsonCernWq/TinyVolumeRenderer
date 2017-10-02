@@ -6,7 +6,6 @@
 
 #include "glob.hpp"
 #include "texture.hpp"
-#include "volume_reader.hpp"
 
 /////////////////////////////////////////
 //    v6----- v5
@@ -103,15 +102,12 @@ static float quad_buffer_data[] = {
 
 int main(const int argc, const char** argv)
 {
-  // int data_type, data_size;
-  // void* data_ptr = NULL;
-  // ReadVolume(argv[1], data_type, data_size, data_ptr);
-
   // Create Context
   GLFWwindow* window = InitWindow();
 
   // Load data
   GLuint texture = loadBMP_custom("uvtemplate.bmp");
+  GLuint texture_volume = loadRAW_custom(argv[1]);
   
   // Compile Simple Shaders
   GLuint program = LoadProgram("vshader.glsl","fshader.glsl");
