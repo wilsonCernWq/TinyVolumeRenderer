@@ -134,6 +134,7 @@ bool ReadVolume
 {
   if (!ParseJSON(fname)) { return false; };
   if (!ParseRaw(data_ptr, data_size)) { return false; };
+  data_type = VolumeInfo::type;
   data_X = VolumeInfo::size.x;
   data_Y = VolumeInfo::size.y;
   data_Z = VolumeInfo::size.z;

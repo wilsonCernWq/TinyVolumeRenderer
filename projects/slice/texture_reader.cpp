@@ -1,11 +1,12 @@
-#include <glad/glad.h>
-#include <GLFW/glfw3.h>
+#include "texture_reader.hpp"
+#include "volume_reader.hpp"
+#include "comm.hpp"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "volume_reader.hpp"
 
-GLuint loadBMP_custom(const char * imagepath){
+GLuint loadBMP_custom(const char * imagepath)
+{
 
   printf("Reading image %s\n", imagepath);
 
@@ -92,80 +93,81 @@ GLuint loadBMP_custom(const char * imagepath){
 }
 
 
-GLuint loadRAW_custom(const char * volumepath) {
+GLuint loadRAW_custom(const char * volumepath)
+{
+  // read data from disk
+  fprintf(stdout, "[texture] start reading data\n");  
   int data_type, data_size, data_dim[3];
-  void* data_ptr = NULL;
+  void* data_ptr_void = NULL;
   ReadVolume(volumepath, data_type, data_size,
-	     data_dim[0], data_dim[1], data_dim[2], data_ptr);
-
-  // for (int x = 0; x < data_dim[0]; ++x) {
-  //   for (int y = 0; y < data_dim[1]; ++y) {
-  //     for (int z = 0; z < data_dim[2]; ++z) {
-  // 	int idx = z * data_dim[1] * data_dim[0] + y * data_dim[1] + x;
-  // 	fprintf(stdout, "%i\n", ((uint8_t*)data_ptr)[idx]);
-  //     }
-  //   }
-  // }
-
-  GLint internal_format;
+	     data_dim[0], data_dim[1], data_dim[2], data_ptr_void);
+  char* data_ptr = (char*)data_ptr_void;
+  fprintf(stdout, "[texture] done reading data\n");  
+  // calculate texture type
   GLenum internal_type;
+  fprintf(stdout, "[texture] receving data_type: %i\n", data_type);  
   switch (data_type) {
   case (UCHAR):
-    internal_format = GL_R8;
+    internal_type = GL_UNSIGNED_BYTE;
     break;
   case (CHAR):
-    internal_format = GL_R8;
+    internal_type = GL_BYTE;
     break;
   case (UINT8):
-    internal_format = GL_R8UI;
+    internal_type = GL_UNSIGNED_BYTE;
     break;
   case (UINT16):
-    internal_format = GL_R16UI;
+    internal_type = GL_UNSIGNED_SHORT;
     break;
   case (UINT32):
-    internal_format = GL_R32UI;
+    internal_type = GL_UNSIGNED_INT;
     break;
   case (UINT64):
-    fprintf(stderr, "Error: Cannot handle this type %i", data_type);
+    fprintf(stderr, "Error: Cannot handle this type UINT64 %i\n", data_type);
     exit(-1);
   case (INT8):
-    internal_format = GL_R8I;
+    internal_type = GL_BYTE;
     break;
   case (INT16):
-    internal_format = GL_R16I;
+    internal_type = GL_SHORT;
     break;
   case (INT32):
-    internal_format = GL_R32I;
+    internal_type = GL_INT;
     break;
+  case (INT64):
+    fprintf(stderr, "Error: Cannot handle this type INT64 %i\n", data_type);
+    exit(-1);
   case (FLOAT16):
-    internal_format = GL_R16F;
+    internal_type = GL_HALF_FLOAT;
     break;    
   case (FLOAT32):
-    internal_format = GL_R32F;
+    internal_type = GL_FLOAT;
     break;
   case (DOUBLE64):
-    fprintf(stderr, "Error: Cannot handle this type %i", data_type);
+    fprintf(stderr, "Error: Cannot handle this type DOUBLE64 %i\n", data_type);
     exit(-1);
   default:
-    fprintf(stderr, "Error: Unrecognized type %i", data_type);
+    fprintf(stderr, "Error: Unrecognized type %i\n", data_type);
     exit(-1);
   }
-
-  // // Create one OpenGL texture
-  // GLuint textureID;
-  // glGenTextures(1, &textureID);       
-  // glBindTexture(GL_TEXTURE_3D, textureID);
-  // glTexImage3D(GL_TEXTURE_3D, 0, GL_RED,
-  // 	       width, height, 0, GL_BGR, GL_UNSIGNED_BYTE, data);
-
-  // // OpenGL has now copied the data. Free our own version
-  // delete [] data;
-
-  // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-  // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-  // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-  // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-  // glGenerateMipmap(GL_TEXTURE_2D);
-
-
+  // Create one OpenGL texture
+  check_error_gl("before texture");
+  GLuint textureID;
+  glGenTextures(1, &textureID);   
+  glBindTexture(GL_TEXTURE_3D, textureID);
+  glTexImage3D(GL_TEXTURE_3D, 0, GL_RED, data_dim[0], data_dim[1], data_dim[2],
+	       0, GL_RED, internal_type, data_ptr);
+  check_error_gl("generate texture");
+  // OpenGL has now copied the data. Free our own version
+  delete [] data_ptr;  
+  // ... nice trilinear filtering ...    
+  glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
+  glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+  glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+  glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_BORDER);
+  glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  check_error_gl("filter texture");
+  // Return the ID of the texture we just created
+  return textureID;
 }

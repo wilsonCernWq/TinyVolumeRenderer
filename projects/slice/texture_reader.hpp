@@ -1,6 +1,7 @@
 #pragma once
-#ifndef TEXTURE_HPP
-#define TEXTURE_HPP
+#ifndef TEXTURE_READER_HPP
+#define TEXTURE_READER_HPP
+#include "comm.hpp"
 
 // Load a .BMP file using our custom loader
 GLuint loadBMP_custom(const char * imagepath);

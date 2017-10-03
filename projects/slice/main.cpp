@@ -5,7 +5,9 @@
 #include <vector>
 
 #include "glob.hpp"
-#include "texture.hpp"
+#include "framebuffer.hpp"
+#include "debug_object.hpp"
+#include "texture_reader.hpp"
 
 /////////////////////////////////////////
 //    v6----- v5
@@ -93,12 +95,16 @@ static const GLfloat uv_buffer_data[] = {
   1.000004f, 1.0f-0.671847f,
   0.667979f, 1.0f-0.335851f
 };
-static float quad_buffer_data[] = {
-   1.f, 1.f,0.f,
-  -1.f, 1.f,0.f,
-   1.f,-1.f,0.f,
-  -1.f,-1.f,0.f,
+
+static const GLfloat slice_position_data[] = {
+  -1.0f, 1.0f, 0.0f,
+   1.0f, 1.0f, 0.0f,
+  -1.0f,-1.0f, 0.0f,
+   1.0f,-1.0f, 0.0f
 };
+
+static DebugQuad quad;
+static FrameBufferObject fbo;
 
 int main(const int argc, const char** argv)
 {
@@ -106,120 +112,87 @@ int main(const int argc, const char** argv)
   GLFWwindow* window = InitWindow();
 
   // Load data
-  GLuint texture = loadBMP_custom("uvtemplate.bmp");
-  GLuint texture_volume = loadRAW_custom(argv[1]);
+  GLuint texture_2d = loadBMP_custom("uvtemplate.bmp");
+  GLuint texture_3d = loadRAW_custom(argv[1]);
+  fprintf(stdout, "%i, %i\n", texture_2d, texture_3d);
   
   // Compile Simple Shaders
-  GLuint program = LoadProgram("vshader.glsl","fshader.glsl");
+  GLuint program = LoadProgram("vshader_slice.glsl","fshader_slice.glsl");
+  //GLuint program = LoadProgram("vshader_box.glsl","fshader_box.glsl");
   ASSERT(program != 0, "Failed to create program");
   
   // Texture
-  GLint texture_location = glGetUniformLocation(program, "tex");  
-  ASSERT(texture_location != -1, "Failed to find 'tex' location");
+  GLint texture2d_location = glGetUniformLocation(program, "tex2d");
+  GLint texture3d_location = glGetUniformLocation(program, "tex3d");  
+  WARN(texture2d_location != -1, "Failed to find 'tex2d' location");
+  WARN(texture3d_location != -1, "Failed to find 'tex3d' location");
       
   // Setup Vertex Buffer
   GLuint vertex_array;
   glGenVertexArrays(1, &vertex_array);
   glBindVertexArray(vertex_array);
   
-  GLuint vertex_buffer[2];
-  glGenBuffers(2, vertex_buffer);
+  GLuint vertex_buffer[1];
+  glGenBuffers(1, vertex_buffer);
   glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer[0]);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(vertex_buffer_data),
-	       vertex_buffer_data, GL_STATIC_DRAW);
-  glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer[1]);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(uv_buffer_data),
-	       uv_buffer_data, GL_STATIC_DRAW);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(slice_position_data),
+  	       slice_position_data, GL_STATIC_DRAW);
+
+  // GLuint vertex_buffer[2];
+  // glGenBuffers(2, vertex_buffer);
+  // glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer[0]);
+  // glBufferData(GL_ARRAY_BUFFER, sizeof(vertex_buffer_data),
+  // 	         vertex_buffer_data, GL_STATIC_DRAW);
+  // glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer[1]);
+  // glBufferData(GL_ARRAY_BUFFER, sizeof(uv_buffer_data),
+  //             uv_buffer_data, GL_STATIC_DRAW);
 
   GLint vposition_location = glGetAttribLocation(program, "vPosition");
   ASSERT(vposition_location != -1, "Failed to find 'vPosition' location");
-  GLint vtexcoord_location = glGetAttribLocation(program, "vTexCoord");
-  ASSERT(vtexcoord_location != -1, "Failed to find 'vTexCoord' location");    
-  GLint mvp_location = glGetUniformLocation(program, "MVP");
-  ASSERT(mvp_location != -1, "Failed to find 'MVP' location");
+  //GLint vtexcoord_location = glGetAttribLocation(program, "vTexCoord");
+  //ASSERT(vtexcoord_location != -1, "Failed to find 'vTexCoord' location");    
+  //GLint mvp_location = glGetUniformLocation(program, "MVP");
+  //ASSERT(mvp_location != -1, "Failed to find 'MVP' location");
 
-  // Quad
-  GLuint program_quad = LoadProgram("vshader_quad.glsl","fshader_quad.glsl");
-  ASSERT(program_quad != 0, "Failed to create program");
-  GLuint quad_array;
-  glGenVertexArrays(1, &quad_array);
-  glBindVertexArray(quad_array);
-  GLuint quad_buffer;
-  glGenBuffers(1, &quad_buffer);
-  glBindBuffer(GL_ARRAY_BUFFER, quad_buffer);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(quad_buffer_data),
-	       quad_buffer_data, GL_STATIC_DRAW);
-  GLint vposition_quad_location = glGetAttribLocation(program_quad, "vPosition");
-  ASSERT(vposition_quad_location != -1, "Failed to find 'vPosition' location");
-  GLint texture_quad_location = glGetUniformLocation(program_quad, "tex");  
-  ASSERT(texture_quad_location != -1, "Failed to find 'tex' location");
+  //quad.Init();
 
-  // FBO
-  size_t fbo_width = 640, fbo_height = 480;
-  GLuint FramebufferName;
-  glGenFramebuffers(1, &FramebufferName);
-  glBindFramebuffer(GL_FRAMEBUFFER, FramebufferName);
-  GLuint fboColorBuffer;
-  glGenTextures(1, &fboColorBuffer);
-  glBindTexture(GL_TEXTURE_2D, fboColorBuffer);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, fbo_width, fbo_height,
-	       0, GL_RGB, GL_UNSIGNED_BYTE, 0);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);  
-  glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, fboColorBuffer, 0);
-  GLuint fboDepthBuffer;
-  glGenRenderbuffers(1, &fboDepthBuffer);
-  glBindRenderbuffer(GL_RENDERBUFFER, fboDepthBuffer);
-  glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, fbo_width, fbo_height);
-  glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT,
-			    GL_RENDERBUFFER, fboDepthBuffer);
-  GLenum DrawBuffers[1] = { GL_COLOR_ATTACHMENT0 };
-  glDrawBuffers(1, DrawBuffers); // "1" is the size of DrawBuffers
-  if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-  { fprintf(stderr, "FBO Incomplete!\n"); exit(-1); }
+  //fbo.Init(640, 480, 1);
 
+  check_error_gl("start rendering");
   while (!glfwWindowShouldClose(window))
   {
+    //fbo.Bind(1);
+    
     // bind data
     glUseProgram(program);
     glBindVertexArray(vertex_array);
     
-    glUniformMatrix4fv(mvp_location, 1, GL_FALSE, GetMVPMatrix());
+    //glUniformMatrix4fv(mvp_location, 1, GL_FALSE, GetMVPMatrix());
 
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, texture);    
-    glUniform1i(texture_location, 0);
+    glBindTexture(GL_TEXTURE_3D, texture_3d);    
+    glUniform1i(texture3d_location, 0);
     
     glEnableVertexAttribArray(vposition_location);
     glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer[0]);
     glVertexAttribPointer(vposition_location, 3, GL_FLOAT, GL_FALSE, 0, (void*) 0);
-    
-    glEnableVertexAttribArray(vtexcoord_location);
-    glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer[1]);
-    glVertexAttribPointer(vtexcoord_location, 2, GL_FLOAT, GL_FALSE, 0, (void*) 0);
 
-    glBindFramebuffer(GL_FRAMEBUFFER, FramebufferName);
+    check_error_gl("in rendering");
+    
+    //glEnableVertexAttribArray(vtexcoord_location);
+    //glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer[1]);
+    //glVertexAttribPointer(vtexcoord_location, 2, GL_FLOAT, GL_FALSE, 0, (void*) 0);
+
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);    
-    glDrawArrays(GL_TRIANGLES, 0, 12 * 3); // 12*3 indices starting at 0 -> 12 triangles
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
-    // program 2
-    glUseProgram(program_quad);
-    glBindVertexArray(quad_array);
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, fboColorBuffer);    
-    glUniform1i(texture_quad_location, 0);
-    
-    glEnableVertexAttribArray(vposition_quad_location);
-    glBindBuffer(GL_ARRAY_BUFFER, quad_buffer);
-    glVertexAttribPointer(vposition_quad_location, 3, GL_FLOAT, GL_FALSE, 0, (void*) 0);
-    
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4); // 12*3 indices starting at 0 -> 12 triangles
-    
+    //fbo.Unbind();   
+    //quad.Draw(fbo.GetColor(0));
+  
     glfwSwapBuffers(window);
     glfwPollEvents();
   }
+  
   glfwDestroyWindow(window);
   glfwTerminate();
   exit(EXIT_SUCCESS);
