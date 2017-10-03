@@ -8,20 +8,22 @@ void FrameBufferObject::Init(size_t W, size_t H, size_t colorBufferNum)
   fboHeight = H;
   fboColorBufferNum = colorBufferNum;  
   fboColorBuffer = new GLuint[fboColorBufferNum];
-
+  
   glGenFramebuffers(1, &framebufferID);
   glBindFramebuffer(GL_FRAMEBUFFER, framebufferID);
 
+  GLubyte *dummyData = new GLubyte[fboWidth * fboHeight * 4]();
   glGenTextures((GLuint)fboColorBufferNum, fboColorBuffer);
-  for (size_t i = 0; i < fboColorBufferNum; ++i) {
+  for (size_t i = 0; i < fboColorBufferNum; ++i) {    
     glBindTexture(GL_TEXTURE_2D, fboColorBuffer[i]);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, fboWidth, fboHeight,
-		 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
+		 0, GL_RGBA, GL_UNSIGNED_BYTE, dummyData);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);  
     glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, fboColorBuffer[i], 0);
     glBindTexture(GL_TEXTURE_2D, 0);
   }
+  delete [] dummyData;
   check_error_gl("FBO color buffers");
   
   glGenRenderbuffers(1, &fboDepthBuffer);

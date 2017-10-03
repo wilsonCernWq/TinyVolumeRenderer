@@ -155,14 +155,14 @@ int main(const int argc, const char** argv)
   //GLint mvp_location = glGetUniformLocation(program, "MVP");
   //ASSERT(mvp_location != -1, "Failed to find 'MVP' location");
 
-  //quad.Init();
+  quad.Init();
 
-  //fbo.Init(640, 480, 1);
+  fbo.Init(640, 480, 1);
 
   check_error_gl("start rendering");
   while (!glfwWindowShouldClose(window))
   {
-    //fbo.Bind(1);
+    fbo.Bind(1);
     
     // bind data
     glUseProgram(program);
@@ -193,8 +193,8 @@ int main(const int argc, const char** argv)
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);    
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
-    //fbo.Unbind();   
-    //quad.Draw(fbo.GetColor(0));
+    fbo.Unbind();   
+    quad.Draw(fbo.GetColor(0));
   
     glfwSwapBuffers(window);
     glfwPollEvents();
