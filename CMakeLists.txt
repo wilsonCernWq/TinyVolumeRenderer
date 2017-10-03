@@ -32,3 +32,12 @@ foreach(child ${children})
       add_subdirectory(${projdir}/${child})
   endif()
 endforeach()
+#
+# install data
+file(GLOB VOLUMES "data/*")
+set(COPYLIST ${COMMON_DLLS} ${VOLUMES})
+if(EXECUTABLE_OUTPUT_PATH)
+  DeployRepo("${COPYLIST}" "${EXECUTABLE_OUTPUT_PATH}")
+else()
+  DeployRepo("${COPYLIST}" "${CMAKE_BINARY_DIR}")
+endif()

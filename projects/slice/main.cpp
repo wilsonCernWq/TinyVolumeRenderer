@@ -135,8 +135,6 @@ int main(const int argc, const char** argv)
   GLuint vertex_buffer[1];
   glGenBuffers(1, vertex_buffer);
   glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer[0]);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(slice_position_data),
-  	       slice_position_data, GL_STATIC_DRAW);
 
   // GLuint vertex_buffer[2];
   // glGenBuffers(2, vertex_buffer);
@@ -175,6 +173,8 @@ int main(const int argc, const char** argv)
     
     glEnableVertexAttribArray(vposition_location);
     glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer[0]);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(slice_position_data),
+		 slice_position_data, GL_DYNAMIC_DRAW);
     glVertexAttribPointer(vposition_location, 3, GL_FLOAT, GL_FALSE, 0, (void*) 0);
 
     check_error_gl("in rendering");

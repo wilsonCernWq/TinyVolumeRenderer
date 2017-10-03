@@ -5,7 +5,7 @@ string(TOLOWER ${PID} PID)
 #
 # install dlls or shader
 file(GLOB SHADERS "shaders/*.glsl")
-set(COPYLIST ${COMMON_DLLS} ${SHADERS})
+set(COPYLIST ${SHADERS})
 if(EXECUTABLE_OUTPUT_PATH)
   DeployRepo("${COPYLIST}" "${EXECUTABLE_OUTPUT_PATH}")
 else()
