@@ -1,13 +1,11 @@
 #version 330 core
 uniform sampler3D tex3d;
+uniform sampler2D textf;
 in vec3 fTex3dCoord;
 layout(location = 0) out vec4 color;
 void main()
 {
-  if (texture(tex3d, fTex3dCoord).r > 0) {
-    color = vec4(0.f, 1.f, 0.f, 1.f);
-  }
-  else {
-    color = vec4(1.f, 0.f, 0.f, 1.f);
-  }
+  float dataval = texture(tex3d, fTex3dCoord).r;
+  vec4  datacol = texture(textf, vec2(dataval, 0.f));
+  color = datacol;
 };

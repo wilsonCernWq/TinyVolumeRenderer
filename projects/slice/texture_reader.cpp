@@ -21,7 +21,8 @@ GLuint loadBMP_custom(const char * imagepath)
   // Open the file
   FILE * file = fopen(imagepath,"rb");
   if (!file){
-    printf("%s could not be opened. Are you in the right directory ? Don't forget to read the FAQ !\n", imagepath);
+    printf("%s could not be opened. Are you in the right directory ? "
+	   "Don't forget to read the FAQ !\n", imagepath);
     getchar();
     return 0;
   }
@@ -41,8 +42,16 @@ GLuint loadBMP_custom(const char * imagepath)
     return 0;
   }
   // Make sure this is a 24bpp file
-  if ( *(int*)&(header[0x1E])!=0  )         {printf("Not a correct BMP file\n");    fclose(file); return 0;}
-  if ( *(int*)&(header[0x1C])!=24 )         {printf("Not a correct BMP file\n");    fclose(file); return 0;}
+  if ( *(int*)&(header[0x1E])!=0  ) {
+    printf("Not a correct BMP file\n");
+    fclose(file);
+    return 0;
+  }
+  if ( *(int*)&(header[0x1C])!=24 ) {
+    printf("Not a correct BMP file\n");
+    fclose(file);
+    return 0;
+  }
 
   // Read the information about the image
   dataPos    = *(int*)&(header[0x0A]);
@@ -91,7 +100,6 @@ GLuint loadBMP_custom(const char * imagepath)
   // Return the ID of the texture we just created
   return textureID;
 }
-
 
 GLuint loadRAW_custom(const char * volumepath)
 {
@@ -170,4 +178,28 @@ GLuint loadRAW_custom(const char * volumepath)
   check_error_gl("filter texture");
   // Return the ID of the texture we just created
   return textureID;
+}
+
+GLuint loadTFN_custom()
+{
+  GLubyte texels[32] =
+  {
+    0,   0,   255, 0,
+    0,   255, 0,   127,
+    255, 0,   0,   255
+  };
+  // Create one OpenGL texture
+  check_error_gl("before texture");
+  GLuint textureID;
+  glGenTextures(1, &textureID);   
+  glBindTexture(GL_TEXTURE_2D, textureID);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 3, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, texels);
+  check_error_gl("generate texture");
+  // ... nice trilinear filtering ...    
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  // Return the ID of the texture we just created
+  return textureID;  
 }

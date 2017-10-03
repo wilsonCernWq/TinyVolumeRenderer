@@ -9,4 +9,6 @@ GLuint loadBMP_custom(const char * imagepath);
 // Load a .RAW file as 3D texture
 GLuint loadRAW_custom(const char * volumepath);
 
+// Load a Tfn
+GLuint loadTFN_custom();
 #endif

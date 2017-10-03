@@ -114,7 +114,8 @@ int main(const int argc, const char** argv)
   // Load data
   GLuint texture_2d = loadBMP_custom("uvtemplate.bmp");
   GLuint texture_3d = loadRAW_custom(argv[1]);
-  fprintf(stdout, "%i, %i\n", texture_2d, texture_3d);
+  GLuint texture_tf = loadTFN_custom();
+  fprintf(stdout, "%i, %i, %i\n", texture_2d, texture_3d, texture_tf);
   
   // Compile Simple Shaders
   GLuint program = LoadProgram("vshader_slice.glsl","fshader_slice.glsl");
@@ -123,9 +124,11 @@ int main(const int argc, const char** argv)
   
   // Texture
   GLint texture2d_location = glGetUniformLocation(program, "tex2d");
-  GLint texture3d_location = glGetUniformLocation(program, "tex3d");  
+  GLint texture3d_location = glGetUniformLocation(program, "tex3d");
+  GLint texturetf_location = glGetUniformLocation(program, "textf");  
   WARN(texture2d_location != -1, "Failed to find 'tex2d' location");
   WARN(texture3d_location != -1, "Failed to find 'tex3d' location");
+  WARN(texturetf_location != -1, "Failed to find 'textf' location");
       
   // Setup Vertex Buffer
   GLuint vertex_array;
@@ -170,7 +173,11 @@ int main(const int argc, const char** argv)
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_3D, texture_3d);    
     glUniform1i(texture3d_location, 0);
-    
+
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, texture_tf);    
+    glUniform1i(texturetf_location, 1);
+
     glEnableVertexAttribArray(vposition_location);
     glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer[0]);
     glBufferData(GL_ARRAY_BUFFER, sizeof(slice_position_data),
