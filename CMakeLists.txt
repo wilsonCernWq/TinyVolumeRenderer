@@ -34,8 +34,7 @@ foreach(child ${children})
 endforeach()
 #
 # install data
-file(GLOB VOLUMES "data/*")
-set(COPYLIST ${COMMON_DLLS} ${VOLUMES})
+set(COPYLIST ${COMMON_DLLS})
 if(EXECUTABLE_OUTPUT_PATH)
   DeployRepo("${COPYLIST}" "${EXECUTABLE_OUTPUT_PATH}")
 else()

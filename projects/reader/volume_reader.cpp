@@ -7,9 +7,10 @@
 #else
 # error "GLM is required here"
 #endif
+#include <cstdio>
+#include <cassert>
 #include <fstream>
 #include <string>
-#include <cassert>
 #include <algorithm>
 
 using namespace rapidjson;
@@ -22,7 +23,39 @@ namespace VolumeInfo {
   static vec3i size;
   static vec3f spacing;
   static std::string fname;
+  static std::string dpath;
 };
+
+size_t SizeOf(int data_type)
+{
+  switch (data_type) {
+  case (UCHAR):
+    return sizeof(unsigned char);
+  case (CHAR):
+    return sizeof(char);
+  case (UINT8):
+    return sizeof(uint8_t);
+  case (UINT16):
+    return sizeof(uint16_t);
+  case (UINT32):
+    return sizeof(uint32_t);
+  case (UINT64):
+    return sizeof(uint64_t);
+  case (INT8):
+    return sizeof(int8_t);
+  case (INT16):
+    return sizeof(int16_t);
+  case (INT32):
+    return sizeof(int32_t);
+  case (FLOAT32):
+    return sizeof(float);
+  case (DOUBLE64):
+    return sizeof(double);   
+  default:
+    fprintf(stderr, "Error: Unrecognized type %i", data_type);
+    return 0;
+  }
+}
 
 int ConvertType(const std::string& type)
 {
@@ -71,6 +104,20 @@ std::string ParseURL(const std::string& str)
   return fname;
 }
 
+std::string ParseDIR(const std::string& str)
+{
+  std::string dpath;
+  std::string fpath = ParsePath(str);
+  size_t p = fpath.find_last_of("/\\");
+  if (p != std::string::npos) {
+    dpath = fpath.substr(0, p + 1);
+  }
+  else {
+    dpath = "./";
+  }
+  return dpath;
+}
+
 vec3f ReadVec3(const Value& a)
 {
   assert(a.IsArray());
@@ -97,6 +144,7 @@ bool ParseJSON(const std::string& fname)
   VolumeInfo::size    = ReadVec3(d["size"]);
   VolumeInfo::spacing = ReadVec3(d["spacing"]);
   VolumeInfo::fname   = ParseURL(d["url"].GetString());
+  VolumeInfo::dpath   = ParseDIR(fname);
   fprintf(stdout, "[json] volume information\n");
   fprintf(stdout, "[json]     name: %s\n", VolumeInfo::name.c_str());
   fprintf(stdout, "[json]     type: %i\n", VolumeInfo::type);
@@ -111,10 +159,15 @@ bool ParseJSON(const std::string& fname)
 bool ParseRaw(void*& data_ptr, int& data_size)
 {
   // open file
-  std::ifstream in(VolumeInfo::fname.c_str(), std::ios::in | std::ios::binary);
+  std::string fname = (VolumeInfo::dpath + VolumeInfo::fname);
+  std::ifstream in(fname.c_str(),
+		   std::ios::in | std::ios::binary);
   if (!in.is_open()) {
-    fprintf(stderr, "Error: cannot open file %s\n", VolumeInfo::fname.c_str());
+    fprintf(stderr, "Error: cannot open file %s\n", fname.c_str());
     return false;
+  }
+  else {
+    fprintf(stderr, "[raw] open RAW file %s\n", fname.c_str());
   }
   if (data_ptr != NULL) {
     fprintf(stderr, "Error: Data buffer is not empty\n");

@@ -1,7 +1,6 @@
 #pragma once
 
 #include <cstddef>
-#include <cstdio>
 #include <cstdint>
 
 #define ERROR_TYPE 0
@@ -23,33 +22,4 @@ bool ReadVolume
 (const char* fname, int& data_type, int& data_size,
  int& data_X, int& data_Y, int& data_Z, void*& data_ptr);
 
-inline size_t SizeOf(int data_type)
-{
-  switch (data_type) {
-  case (UCHAR):
-    return sizeof(unsigned char);
-  case (CHAR):
-    return sizeof(char);
-  case (UINT8):
-    return sizeof(uint8_t);
-  case (UINT16):
-    return sizeof(uint16_t);
-  case (UINT32):
-    return sizeof(uint32_t);
-  case (UINT64):
-    return sizeof(uint64_t);
-  case (INT8):
-    return sizeof(int8_t);
-  case (INT16):
-    return sizeof(int16_t);
-  case (INT32):
-    return sizeof(int32_t);
-  case (FLOAT32):
-    return sizeof(float);
-  case (DOUBLE64):
-    return sizeof(double);   
-  default:
-    fprintf(stderr, "Error: Unrecognized type %i", data_type);
-    return 0;
-  }
-}
+size_t SizeOf(int data_type);
