@@ -183,7 +183,8 @@ int main(const int argc, const char** argv)
       slice_position_data[8 ] = -0.995f + i * 0.01f;
       slice_position_data[11] = -0.995f + i * 0.01f;
 
-      fbo.BindSingle(i%2);
+      //fbo.BindSingle(i%2);
+      fbo.BindMultiple(i%2,i%2);
       
       glActiveTexture(GL_TEXTURE0);
       glBindTexture(GL_TEXTURE_2D, fbo.GetColor((i+1)%2));
@@ -211,7 +212,7 @@ int main(const int argc, const char** argv)
 
       glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);    
       glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-      fbo.Unbind();
+      fbo.UnBindAll();
     }
     quad.Draw(fbo.GetColor(0));
   

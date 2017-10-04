@@ -17,7 +17,8 @@ void main()
   // -- front to back
   float alpha = bgcol.a   + (1.f - bgcol.a) * datacol.a;
   vec3  color = bgcol.rgb + (1.f - bgcol.a) * datacol.rgb * datacol.a;
+  finalcolor = vec4(color, alpha);
   // -- back to front
-  // vec3  color = datacol.rgb * datacol.a + (1.f - datacol.a) * bgcol.rgb;
-  finalcolor = vec4(color, 1.f);
+  //vec3  color = datacol.rgb * datacol.a + (1.f - datacol.a) * bgcol.rgb;
+  //finalcolor = vec4(color, 1.f);
 };

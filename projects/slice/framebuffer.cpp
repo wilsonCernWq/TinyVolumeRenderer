@@ -40,17 +40,27 @@ void FrameBufferObject::Init(size_t W, size_t H, size_t colorBufferNum)
   check_error_gl("FBO init complete");
 }
 
-void FrameBufferObject::Bind(size_t colorBufferNum)
+void FrameBufferObject::BindMultiple(size_t colorBufferLeft, size_t colorBufferRight)
 {
-  colorBufferNum = std::min(colorBufferNum, fboColorBufferNum);
-    
+  if (colorBufferRight < colorBufferLeft) {
+    fprintf(stderr, "Error: "
+	    "colorBufferLeft index is smaller than colorBufferRight index\n");
+    exit(EXIT_FAILURE);
+  }
+
+  colorBufferLeft  = std::min(colorBufferLeft,  fboColorBufferNum-1);
+  colorBufferRight = std::min(colorBufferRight, fboColorBufferNum-1);
+  size_t colorBufferNum = colorBufferRight - colorBufferLeft + 1;
+
+  //printf("%i\n", colorBufferNum);
+  
   glGetIntegerv(GL_VIEWPORT, previewport);
   glViewport(0, 0, fboWidth, fboHeight);
 
   glBindFramebuffer(GL_FRAMEBUFFER, framebufferID);
   GLenum* DrawBuffers = new GLenum[colorBufferNum];
-  for (int i = 0; i <= colorBufferNum; ++i) {
-    DrawBuffers[i] = GL_COLOR_ATTACHMENT0 + i;
+  for (int i = 0; i < colorBufferNum; ++i) {
+    DrawBuffers[i] = GL_COLOR_ATTACHMENT0 + i + colorBufferLeft;
   }
   glDrawBuffers(colorBufferNum, DrawBuffers);
   delete [] DrawBuffers;
@@ -68,8 +78,19 @@ void FrameBufferObject::BindSingle(size_t colorBufferIdx)
   glDrawBuffers(1, DrawBuffers);
 }
 
-void FrameBufferObject::Unbind()
+void FrameBufferObject::UnBindAll()
 {
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
   glViewport(previewport[0],previewport[1],previewport[2],previewport[3]);
+}
+
+void FrameBufferObject::Clean() {
+  glBindFramebuffer(GL_FRAMEBUFFER, 0 /*UNBIND*/);
+  glDeleteFramebuffers(1, &framebufferID);
+  glDeleteRenderbuffers(1, &fboDepthBuffer);
+  if (fboColorBuffer) {
+    glDeleteTextures(fboColorBufferNum, fboColorBuffer);
+    delete [] fboColorBuffer;
+    fboColorBuffer = NULL;
+  }
 }
