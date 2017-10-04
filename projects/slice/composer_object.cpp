@@ -17,6 +17,8 @@ void ComposerObject::Init()
   ASSERT(vposition_location != -1, "Failed to find 'vPosition' location");
   vtexcoord_location = glGetAttribLocation(program, "vTexCoord");
   ASSERT(vposition_location != -1, "Failed to find 'vTexCoord' location");
+  samplingrate_location = glGetUniformLocation(program, "samplingRate");
+  ASSERT(samplingrate_location != -1, "Failed to find 'samplingRate' location");
   
   // Setup Vertex Array Object
   glGenVertexArrays(1, &vertex_array);
@@ -35,9 +37,11 @@ void ComposerObject::Bind()
 }
 
 void ComposerObject::Compose
-(const GLint texture_2d, const GLint texture_3d, const GLint texture_tf,
+(const GLint texture_2d, const GLint texture_3d, const GLint texture_tf, const float sr,
  const GLfloat* position_ptr, const GLfloat* texcoord_ptr, const size_t data_size)
-{      
+{
+  glUniform1f(samplingrate_location, sr);
+  
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D, texture_2d);
   glUniform1i(texture3d_location, 0);

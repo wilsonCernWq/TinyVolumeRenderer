@@ -7,7 +7,7 @@
 
 GLuint loadBMP_custom(const char * imagepath)
 {
-  printf("Reading image %s\n", imagepath);
+  fprintf(stdout, "Reading image %s\n", imagepath);
 
   // Data read from the header of the BMP file
   unsigned char header[54];
@@ -20,7 +20,7 @@ GLuint loadBMP_custom(const char * imagepath)
   // Open the file
   FILE * file = fopen(imagepath,"rb");
   if (!file){
-    printf("%s could not be opened. Are you in the right directory ? "
+    fprintf(stdout, "%s could not be opened. Are you in the right directory ? "
 	   "Don't forget to read the FAQ !\n", imagepath);
     getchar();
     return 0;
@@ -30,24 +30,24 @@ GLuint loadBMP_custom(const char * imagepath)
 
   // If less than 54 bytes are read, problem
   if ( fread(header, 1, 54, file)!=54 ){ 
-    printf("Not a correct BMP file\n");
+    fprintf(stdout, "Not a correct BMP file\n");
     fclose(file);
     return 0;
   }
   // A BMP files always begins with "BM"
   if ( header[0]!='B' || header[1]!='M' ){
-    printf("Not a correct BMP file\n");
+    fprintf(stdout, "Not a correct BMP file\n");
     fclose(file);
     return 0;
   }
   // Make sure this is a 24bpp file
   if ( *(int*)&(header[0x1E])!=0  ) {
-    printf("Not a correct BMP file\n");
+    fprintf(stdout, "Not a correct BMP file\n");
     fclose(file);
     return 0;
   }
   if ( *(int*)&(header[0x1C])!=24 ) {
-    printf("Not a correct BMP file\n");
+    fprintf(stdout, "Not a correct BMP file\n");
     fclose(file);
     return 0;
   }

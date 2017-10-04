@@ -65,7 +65,9 @@ static Camera camera;
 const glm::mat4& GetMVPMatrix()
 {
   const float angle = (float) glfwGetTime() / 10.f;
-  const glm::mat4 m = glm::rotate(glm::mat4(1.f), angle, glm::vec3(0,1,0));
+  const glm::mat4 m =
+    glm::rotate(glm::mat4(1.f), angle, glm::vec3(0,1,0)) *
+    glm::rotate(glm::mat4(1.f), angle, glm::vec3(0,0,1));
   camera.mvp = camera.proj * camera.view * m;
   return camera.mvp;
 }
