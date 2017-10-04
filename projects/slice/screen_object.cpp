@@ -1,4 +1,4 @@
-#include "debug_object.hpp"
+#include "screen_object.hpp"
 
 static float vertex_buffer_data[] = {
    1.f, 1.f,0.f,
@@ -7,7 +7,7 @@ static float vertex_buffer_data[] = {
   -1.f,-1.f,0.f,
 };
 
-void DebugQuad::Init()
+void ScreenObject::Init()
 {
   program = LoadProgram("vshader_quad.glsl","fshader_quad.glsl");
   ASSERT(program != 0, "Failed to create program");
@@ -26,7 +26,7 @@ void DebugQuad::Init()
   WARN(texture2d_location   != -1, "Failed to find 'tex' location");  
 }
 
-void DebugQuad::Draw(GLint textureID)
+void ScreenObject::Draw(GLint textureID)
 {
   glUseProgram(program);
   glBindVertexArray(vertex_array);

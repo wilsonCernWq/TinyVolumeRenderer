@@ -7,7 +7,7 @@
 #include "glob.hpp"
 #include "framebuffer.hpp"
 #include "texture_reader.hpp"
-#include "debug_object.hpp"
+#include "screen_object.hpp"
 #include "composer_object.hpp"
 
 /////////////////////////////////////////
@@ -107,7 +107,7 @@ static GLfloat slice_position_data[] = {
    1.0f,-1.0f, 0.0f
 };
 
-static DebugQuad quad;
+static ScreenObject quad;
 static FrameBufferObject fbo;
 static ComposerObject composer;
 
