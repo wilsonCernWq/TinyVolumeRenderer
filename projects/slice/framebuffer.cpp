@@ -56,6 +56,18 @@ void FrameBufferObject::Bind(size_t colorBufferNum)
   delete [] DrawBuffers;
 }
 
+void FrameBufferObject::BindSingle(size_t colorBufferIdx)
+{
+  colorBufferIdx = std::min(colorBufferIdx, fboColorBufferNum-1);
+  
+  glGetIntegerv(GL_VIEWPORT, previewport);
+  glViewport(0, 0, fboWidth, fboHeight);
+  
+  glBindFramebuffer(GL_FRAMEBUFFER, framebufferID);
+  GLenum DrawBuffers[1] = { GL_COLOR_ATTACHMENT0 + (GLenum)colorBufferIdx };
+  glDrawBuffers(1, DrawBuffers);
+}
+
 void FrameBufferObject::Unbind()
 {
   glBindFramebuffer(GL_FRAMEBUFFER, 0);

@@ -19,6 +19,9 @@
 //  v2------v3
 /////////////////////////////////////////
 
+//static const GLfloat vertex_buffer_data[] = {
+//};
+
 static const GLfloat vertex_buffer_data[] = {
   -1.0f,-1.0f,-1.0f,
   -1.0f,-1.0f, 1.0f,
@@ -96,7 +99,7 @@ static const GLfloat uv_buffer_data[] = {
   0.667979f, 1.0f-0.335851f
 };
 
-static const GLfloat slice_position_data[] = {
+static GLfloat slice_position_data[] = {
   -1.0f, 1.0f, 0.0f,
    1.0f, 1.0f, 0.0f,
   -1.0f,-1.0f, 0.0f,
@@ -115,7 +118,11 @@ int main(const int argc, const char** argv)
   GLuint texture_2d = loadBMP_custom("uvtemplate.bmp");
   GLuint texture_3d = loadRAW_custom(argv[1]);
   GLuint texture_tf = loadTFN_custom();
-  fprintf(stdout, "%i, %i, %i\n", texture_2d, texture_3d, texture_tf);
+  fprintf(stdout,
+	  "[renderer] texture_2d location %i\n"
+	  "[renderer] texture_3d location %i\n"
+	  "[renderer] texture_tf location %i\n",
+	  texture_2d, texture_3d, texture_tf);
   
   // Compile Simple Shaders
   GLuint program = LoadProgram("vshader_slice.glsl","fshader_slice.glsl");
@@ -157,12 +164,11 @@ int main(const int argc, const char** argv)
 
   quad.Init();
 
-  fbo.Init(640, 480, 1);
-
   check_error_gl("start rendering");
   while (!glfwWindowShouldClose(window))
   {
-    fbo.Bind(1);
+
+    fbo.Init(640, 480, 2);
     
     // bind data
     glUseProgram(program);
@@ -170,30 +176,43 @@ int main(const int argc, const char** argv)
     
     //glUniformMatrix4fv(mvp_location, 1, GL_FALSE, GetMVPMatrix());
 
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_3D, texture_3d);    
-    glUniform1i(texture3d_location, 0);
+    for (int i = 0; i < 100; ++i) {
 
-    glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_2D, texture_tf);    
-    glUniform1i(texturetf_location, 1);
+      slice_position_data[2 ] = -0.995f + i * 0.01f;
+      slice_position_data[5 ] = -0.995f + i * 0.01f;
+      slice_position_data[8 ] = -0.995f + i * 0.01f;
+      slice_position_data[11] = -0.995f + i * 0.01f;
 
-    glEnableVertexAttribArray(vposition_location);
-    glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer[0]);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(slice_position_data),
-		 slice_position_data, GL_DYNAMIC_DRAW);
-    glVertexAttribPointer(vposition_location, 3, GL_FLOAT, GL_FALSE, 0, (void*) 0);
+      fbo.BindSingle(i%2);
+      
+      glActiveTexture(GL_TEXTURE0);
+      glBindTexture(GL_TEXTURE_2D, fbo.GetColor((i+1)%2));
+      glUniform1i(texture3d_location, 0);
 
-    check_error_gl("in rendering");
+      glActiveTexture(GL_TEXTURE1);
+      glBindTexture(GL_TEXTURE_3D, texture_3d);
+      glUniform1i(texture3d_location, 1);
+
+      glActiveTexture(GL_TEXTURE2);
+      glBindTexture(GL_TEXTURE_2D, texture_tf);    
+      glUniform1i(texturetf_location, 2);
+
+      glEnableVertexAttribArray(vposition_location);
+      glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer[0]);
+      glBufferData(GL_ARRAY_BUFFER, sizeof(slice_position_data),
+		   slice_position_data, GL_DYNAMIC_DRAW);
+      glVertexAttribPointer(vposition_location, 3, GL_FLOAT, GL_FALSE, 0, (void*) 0);
+
+      check_error_gl("in rendering");
     
-    //glEnableVertexAttribArray(vtexcoord_location);
-    //glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer[1]);
-    //glVertexAttribPointer(vtexcoord_location, 2, GL_FLOAT, GL_FALSE, 0, (void*) 0);
+      //glEnableVertexAttribArray(vtexcoord_location);
+      //glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer[1]);
+      //glVertexAttribPointer(vtexcoord_location, 2, GL_FLOAT, GL_FALSE, 0, (void*) 0);
 
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);    
-    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-
-    fbo.Unbind();   
+      glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);    
+      glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+      fbo.Unbind();
+    }
     quad.Draw(fbo.GetColor(0));
   
     glfwSwapBuffers(window);

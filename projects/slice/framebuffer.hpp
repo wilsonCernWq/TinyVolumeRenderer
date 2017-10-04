@@ -14,6 +14,7 @@ public:
   ~FrameBufferObject() { if (fboColorBuffer) delete [] fboColorBuffer; }  
   void Init(size_t, size_t, size_t);
   void Bind(size_t);
+  void BindSingle(size_t);
   void Unbind();
   GLuint GetID() { return framebufferID; }
   GLuint GetColor(size_t i) { return fboColorBuffer[i]; }

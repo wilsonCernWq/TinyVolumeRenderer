@@ -7,7 +7,6 @@
 
 GLuint loadBMP_custom(const char * imagepath)
 {
-
   printf("Reading image %s\n", imagepath);
 
   // Data read from the header of the BMP file
@@ -60,7 +59,8 @@ GLuint loadBMP_custom(const char * imagepath)
   height     = *(int*)&(header[0x16]);
 
   // Some BMP files are misformatted, guess missing information
-  if (imageSize==0)    imageSize=width*height*3; // 3 : one byte for each Red, Green and Blue component
+  // 3 : one byte for each Red, Green and Blue component
+  if (imageSize==0)    imageSize=width*height*3; 
   if (dataPos==0)      dataPos=54; // The BMP header is done that way
 
   // Create a buffer
@@ -104,7 +104,7 @@ GLuint loadBMP_custom(const char * imagepath)
 GLuint loadRAW_custom(const char * volumepath)
 {
   // read data from disk
-  fprintf(stdout, "[texture] start reading data\n");  
+  fprintf(stdout, "[texture] start reading volume %s\n", volumepath);  
   int data_type, data_size, data_dim[3];
   void* data_ptr_void = NULL;
   ReadVolume(volumepath, data_type, data_size,
@@ -182,6 +182,7 @@ GLuint loadRAW_custom(const char * volumepath)
 
 GLuint loadTFN_custom()
 {
+  // TODO better transfer function
   GLubyte texels[32] =
   {
     0,   0,   255, 0,
