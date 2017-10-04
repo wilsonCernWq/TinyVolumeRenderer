@@ -9,10 +9,12 @@ private:
   GLint texture3d_location = -1;
   GLint texturetf_location = -1;
   GLint vposition_location = -1;
+  GLint vtexcoord_location = -1;
   GLuint vertex_array  = 0;
-  GLuint vertex_buffer = 0;
+  GLuint vertex_buffer[2] = {0};
 public: 
   void Init();
   void Bind();
-  void Compose(const GLint, const GLint, const GLint, const GLfloat*, const size_t);
+  void Compose(const GLint, const GLint, const GLint,
+	       const GLfloat*, const GLfloat*, const size_t);
 };
