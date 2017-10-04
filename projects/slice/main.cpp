@@ -212,7 +212,8 @@ int main(const int argc, const char** argv)
 
   composer.Init();
   quad.Init();
-
+  fbo.Init(640, 480, 2);
+  
   check_error_gl("start rendering");
   while (!glfwWindowShouldClose(window))
   {
@@ -252,10 +253,11 @@ int main(const int argc, const char** argv)
     // glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
     // check_error_gl("Rendering box");
     
-    fbo.Init(640, 480, 2);
-    composer.Bind();
-    for (int i = 0; i < 100; ++i) // for each slice
+    fbo.Reset();
+    int i = 0;
+    for (; i < 100; ++i) // for each slice
     {
+      composer.Bind();
       float z;
       
       z = min + i * (max - min) * 0.01f;
@@ -294,16 +296,16 @@ int main(const int argc, const char** argv)
       // slice_texcoord_data[17] = z * 0.5f + 0.5f;
       
       fbo.BindSingle(i%2);
-      composer.Compose(fbo.GetColor((i+1) % 2), texture_3d, texture_tf,
+      composer.Compose(fbo.GetColor((i+1)%2), texture_3d, texture_tf,
     		       slice_position.data(), slice_texcoord.data(),
     		       slice_position.size());
       fbo.UnBindAll();
     }
-    quad.Draw(fbo.GetColor(0));
-    check_error_gl("Rendering composer");
-    
+    quad.Draw(fbo.GetColor(i%2));
     glfwSwapBuffers(window);
     glfwPollEvents();
+    check_error_gl("Rendering composer");
+    
   }
   
   glfwDestroyWindow(window);

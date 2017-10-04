@@ -40,6 +40,23 @@ void FrameBufferObject::Init(size_t W, size_t H, size_t colorBufferNum)
   check_error_gl("FBO init complete");
 }
 
+void FrameBufferObject::Reset()
+{ 
+  glBindFramebuffer(GL_FRAMEBUFFER, framebufferID);
+  GLubyte *dummyData = new GLubyte[fboWidth * fboHeight * 4]();
+  for (size_t i = 0; i < fboColorBufferNum; ++i) {
+    glBindTexture(GL_TEXTURE_2D, fboColorBuffer[i]);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, fboWidth, fboHeight,
+		 0, GL_RGBA, GL_UNSIGNED_BYTE, dummyData);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);  
+    glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, fboColorBuffer[i], 0);
+    glBindTexture(GL_TEXTURE_2D, 0);
+  }
+  delete [] dummyData;
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
 void FrameBufferObject::BindMultiple(size_t colorBufferLeft, size_t colorBufferRight)
 {
   if (colorBufferRight < colorBufferLeft) {

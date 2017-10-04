@@ -17,6 +17,7 @@ public:
   void BindSingle(size_t);
   void UnBindAll();
   void Clean();
+  void Reset();
   GLuint GetID() { return framebufferID; }
   GLuint GetColor(size_t i) { return fboColorBuffer[i]; }
   GLuint GetDepth()         { return fboDepthBuffer;    }

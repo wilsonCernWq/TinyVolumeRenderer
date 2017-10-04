@@ -61,7 +61,9 @@ void ComposerObject::Compose
   glVertexAttribPointer(vtexcoord_location, 3, GL_FLOAT, GL_FALSE, 0, (void*) 0);
   
   check_error_gl("in rendering");
-    
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);    
+
+  // We cannot clear color buffer
+  // But we must clear depth
+  glClear(GL_DEPTH_BUFFER_BIT);
   glDrawArrays(GL_TRIANGLE_FAN, 0, data_size / 3);
 }

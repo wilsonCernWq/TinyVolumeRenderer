@@ -64,7 +64,8 @@ static Camera camera;
 
 const glm::mat4& GetMVPMatrix()
 {
-  glm::mat4 m = glm::rotate(glm::mat4(1.f), (float) glfwGetTime() / 10.f, glm::vec3(0,1,0));
+  const float angle = (float) glfwGetTime() / 10.f;
+  const glm::mat4 m = glm::rotate(glm::mat4(1.f), angle, glm::vec3(0,1,0));
   camera.mvp = camera.proj * camera.view * m;
   return camera.mvp;
 }
@@ -177,18 +178,17 @@ void IntersectFetch(std::vector<GLfloat>& pos, std::vector<GLfloat>& tex)
   tex.push_back(ixPts[0].texcoord.x);
   tex.push_back(ixPts[0].texcoord.y);
   tex.push_back(ixPts[0].texcoord.z);
-
-  std::cout << std::endl;
-  for (int i = 0; i < pos.size() / 3; ++i) {
-    printf("(%f,%f,%f), (%f,%f,%f)\n",
-	   pos[3 * i + 0],
-	   pos[3 * i + 1],
-	   pos[3 * i + 2],
-	   tex[3 * i + 0],
-	   tex[3 * i + 1],
-	   tex[3 * i + 2]);
-  }
-  std::cout << std::endl;
+  // std::cout << std::endl;
+  // for (int i = 0; i < pos.size() / 3; ++i) {
+  //   printf("(%f,%f,%f), (%f,%f,%f)\n",
+  // 	   pos[3 * i + 0],
+  // 	   pos[3 * i + 1],
+  // 	   pos[3 * i + 2],
+  // 	   tex[3 * i + 0],
+  // 	   tex[3 * i + 1],
+  // 	   tex[3 * i + 2]);
+  // }
+  // std::cout << std::endl;
 }
 
 //---------------------------------------------------------------------------------------
