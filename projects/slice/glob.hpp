@@ -9,4 +9,5 @@ GLuint LoadProgram(const char*, const char*);
 
 GLFWwindow* InitWindow();
 
-const GLfloat* GetMVPMatrix();
+const glm::mat4& GetMVPMatrix();
+const GLfloat*   GetMVPMatrixPtr();

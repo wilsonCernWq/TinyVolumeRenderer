@@ -60,11 +60,16 @@ struct Camera {
 };
 static Camera camera;
 
-const GLfloat* GetMVPMatrix()
+const glm::mat4& GetMVPMatrix()
 {
   glm::mat4 m = glm::rotate(glm::mat4(1.f), (float) glfwGetTime(), glm::vec3(0,0,1));
   camera.mvp = camera.proj * camera.view * m;
-  return glm::value_ptr(camera.mvp);
+  return camera.mvp;
+}
+
+const GLfloat* GetMVPMatrixPtr()
+{
+  return glm::value_ptr(GetMVPMatrix());
 }
 
 //---------------------------------------------------------------------------------------

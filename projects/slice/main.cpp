@@ -107,6 +107,38 @@ static GLfloat slice_position_data[] = {
    1.0f,-1.0f, 0.0f
 };
 
+static const GLfloat box_position_data[] =
+{
+   1, 1, 1,
+  -1, 1, 1,
+  -1,-1, 1,
+   1,-1, 1,
+   1,-1,-1,
+   1, 1,-1,
+  -1, 1,-1,
+  -1,-1,-1
+};
+static const GLfloat box_color_data[] =
+{
+  1.f, 0.f, 0.f,
+  0.f, 1.f, 0.f,
+  0.f, 0.f, 1.f,
+  1.f, 1.f, 0.f,
+  0.f, 1.f, 1.f,
+  1.f, 0.f, 1.f,
+  1.f, 1.f, 1.f,
+  0.f, 0.f, 0.f
+};
+static const GLuint box_index_data[] =
+{
+  0,1,2, 2,3,0,
+  0,3,4, 4,5,0,
+  0,5,6, 6,1,0,
+  1,6,7, 7,2,1,
+  7,4,3, 3,2,7,
+  4,7,6, 6,5,4
+};
+
 static ScreenObject quad;
 static FrameBufferObject fbo;
 static ComposerObject composer;
@@ -117,52 +149,51 @@ int main(const int argc, const char** argv)
   GLFWwindow* window = InitWindow();
 
   // Load data
-  GLuint texture_2d = loadBMP_custom("uvtemplate.bmp");
   GLuint texture_3d = loadRAW_custom(argv[1]);
   GLuint texture_tf = loadTFN_custom();
   fprintf(stdout,
-	  "[renderer] texture_2d location %i\n"
 	  "[renderer] texture_3d location %i\n"
 	  "[renderer] texture_tf location %i\n",
-	  texture_2d, texture_3d, texture_tf);
+	  texture_3d, texture_tf);
   
-  // // Compile Simple Shaders
-  // GLuint program = LoadProgram("vshader_slice.glsl","fshader_slice.glsl");
-  // //GLuint program = LoadProgram("vshader_box.glsl","fshader_box.glsl");
-  // ASSERT(program != 0, "Failed to create program");
+  // Compile Simple Shaders
+  GLuint program = LoadProgram("vshader_box.glsl","fshader_box.glsl");
+  ASSERT(program != 0, "Failed to create program");
   
-  // // Texture
+  // Texture
   // GLint texture2d_location = glGetUniformLocation(program, "tex2d");
-  // GLint texture3d_location = glGetUniformLocation(program, "tex3d");
-  // GLint texturetf_location = glGetUniformLocation(program, "textf");  
   // WARN(texture2d_location != -1, "Failed to find 'tex2d' location");
+  // GLint texture3d_location = glGetUniformLocation(program, "tex3d");
   // WARN(texture3d_location != -1, "Failed to find 'tex3d' location");
+  // GLint texturetf_location = glGetUniformLocation(program, "textf");
   // WARN(texturetf_location != -1, "Failed to find 'textf' location");
       
-  // // Setup Vertex Buffer
-  // GLuint vertex_array;
-  // glGenVertexArrays(1, &vertex_array);
-  // glBindVertexArray(vertex_array);
+  // Setup Vertex Buffer
+  GLuint vertex_array;
+  glGenVertexArrays(1, &vertex_array);
+  glBindVertexArray(vertex_array);
+
+  GLuint vertex_element;
+  glGenBuffers(1, &vertex_element);
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vertex_element);
+  glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(box_index_data),
+	       box_index_data, GL_STATIC_DRAW);
   
-  // GLuint vertex_buffer[1];
-  // glGenBuffers(1, vertex_buffer);
-  // glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer[0]);
+  GLuint vertex_buffer[2];
+  glGenBuffers(2, vertex_buffer);
+  glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer[0]);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(box_position_data),
+  	       box_position_data, GL_STATIC_DRAW);
+  glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer[1]);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(box_color_data),
+	       box_color_data, GL_STATIC_DRAW);
 
-  // // GLuint vertex_buffer[2];
-  // // glGenBuffers(2, vertex_buffer);
-  // // glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer[0]);
-  // // glBufferData(GL_ARRAY_BUFFER, sizeof(vertex_buffer_data),
-  // // 	         vertex_buffer_data, GL_STATIC_DRAW);
-  // // glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer[1]);
-  // // glBufferData(GL_ARRAY_BUFFER, sizeof(uv_buffer_data),
-  // //             uv_buffer_data, GL_STATIC_DRAW);
-
-  // GLint vposition_location = glGetAttribLocation(program, "vPosition");
-  // ASSERT(vposition_location != -1, "Failed to find 'vPosition' location");
-  // //GLint vtexcoord_location = glGetAttribLocation(program, "vTexCoord");
-  // //ASSERT(vtexcoord_location != -1, "Failed to find 'vTexCoord' location");    
-  // //GLint mvp_location = glGetUniformLocation(program, "MVP");
-  // //ASSERT(mvp_location != -1, "Failed to find 'MVP' location");
+  GLint vposition_location = glGetAttribLocation(program, "vPosition");
+  ASSERT(vposition_location != -1, "Failed to find 'vPosition' location");
+  GLint vcolor_location    = glGetAttribLocation(program, "vColor");
+  ASSERT(vcolor_location    != -1, "Failed to find 'vColor'    location");    
+  GLint mvp_location = glGetUniformLocation(program, "MVP");
+  ASSERT(mvp_location != -1, "Failed to find 'MVP' location");
 
   composer.Init();
   quad.Init();
@@ -170,60 +201,40 @@ int main(const int argc, const char** argv)
   check_error_gl("start rendering");
   while (!glfwWindowShouldClose(window))
   {
-
-    fbo.Init(640, 480, 2);
+    glUseProgram(program);
+    glBindVertexArray(vertex_array);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vertex_element);
     
-    // // bind data
-    // glUseProgram(program);
-    // glBindVertexArray(vertex_array);
+    glUniformMatrix4fv(mvp_location, 1, GL_FALSE, GetMVPMatrixPtr());
+        
+    glEnableVertexAttribArray(vposition_location);
+    glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer[0]);
+    glVertexAttribPointer(vposition_location, 3, GL_FLOAT, GL_FALSE, 0, (void*) 0);
 
-    composer.Bind();
-    //glUniformMatrix4fv(mvp_location, 1, GL_FALSE, GetMVPMatrix());
+    glEnableVertexAttribArray(vcolor_location);
+    glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer[1]);
+    glVertexAttribPointer(vcolor_location, 3, GL_FLOAT, GL_FALSE, 0, (void*) 0);
 
-    for (int i = 0; i < 100; ++i) {
-
-      slice_position_data[2 ] = -0.995f + i * 0.01f;
-      slice_position_data[5 ] = -0.995f + i * 0.01f;
-      slice_position_data[8 ] = -0.995f + i * 0.01f;
-      slice_position_data[11] = -0.995f + i * 0.01f;
-
-      fbo.BindSingle(i%2);
-      composer.Compose(fbo.GetColor((i+1)%2), texture_3d, texture_tf,
-		       slice_position_data, 12);
-
-
-      // fbo.BindMultiple(i%2,i%2);
-      
-      // glActiveTexture(GL_TEXTURE0);
-      // glBindTexture(GL_TEXTURE_2D, fbo.GetColor((i+1)%2));
-      // glUniform1i(texture3d_location, 0);
-
-      // glActiveTexture(GL_TEXTURE1);
-      // glBindTexture(GL_TEXTURE_3D, texture_3d);
-      // glUniform1i(texture3d_location, 1);
-
-      // glActiveTexture(GL_TEXTURE2);
-      // glBindTexture(GL_TEXTURE_2D, texture_tf);    
-      // glUniform1i(texturetf_location, 2);
-
-      // glEnableVertexAttribArray(vposition_location);
-      // glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer[0]);
-      // glBufferData(GL_ARRAY_BUFFER, sizeof(slice_position_data),
-      // 		   slice_position_data, GL_DYNAMIC_DRAW);
-      // glVertexAttribPointer(vposition_location, 3, GL_FLOAT, GL_FALSE, 0, (void*) 0);
-
-      // check_error_gl("in rendering");
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);    
+    glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
+    check_error_gl("Rendering box");
     
-      // //glEnableVertexAttribArray(vtexcoord_location);
-      // //glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer[1]);
-      // //glVertexAttribPointer(vtexcoord_location, 2, GL_FLOAT, GL_FALSE, 0, (void*) 0);
-
-      // glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);    
-      // glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-      fbo.UnBindAll();
-    }
-    quad.Draw(fbo.GetColor(0));
-  
+    // fbo.Init(640, 480, 2);
+    // composer.Bind();    
+    // for (int i = 0; i < 100; ++i)
+    // {
+    //   slice_position_data[2 ] = -0.995f + i * 0.01f;
+    //   slice_position_data[5 ] = -0.995f + i * 0.01f;
+    //   slice_position_data[8 ] = -0.995f + i * 0.01f;
+    //   slice_position_data[11] = -0.995f + i * 0.01f;
+    //   fbo.BindSingle(i%2);
+    //   composer.Compose(fbo.GetColor((i+1) % 2), texture_3d, texture_tf,
+    // 		       slice_position_data, 12);
+    //   fbo.UnBindAll();
+    // }
+    // quad.Draw(fbo.GetColor(0));
+    // check_error_gl("Rendering composer");
+    
     glfwSwapBuffers(window);
     glfwPollEvents();
   }
