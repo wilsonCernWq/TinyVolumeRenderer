@@ -1,7 +1,11 @@
 #include "volume_reader.hpp"
-#include "rapidjson/document.h"
-#include "rapidjson/writer.h"
-#include "rapidjson/stringbuffer.h"
+#ifdef USE_RAPIDJSON
+# include "rapidjson/document.h"
+# include "rapidjson/writer.h"
+# include "rapidjson/stringbuffer.h"
+#else
+# error "rapidJSON is required here"
+#endif
 #ifdef USE_GLM
 # include <glm/glm.hpp>
 #else
