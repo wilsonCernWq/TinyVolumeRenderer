@@ -1,14 +1,23 @@
 // This program is just homework
 // So I am using only the most basic functionalities from openGL
-#include <cstdio>
-#include <cstdlib>
-#include <vector>
 
 #include "glob.hpp"
 #include "framebuffer.hpp"
 #include "texture_reader.hpp"
 #include "screen_object.hpp"
 #include "composer_object.hpp"
+
+#ifdef USE_GLM
+# include <glm/glm.hpp>
+# include <glm/gtc/matrix_transform.hpp>
+# include <glm/gtc/type_ptr.hpp>
+#else
+# error "GLM is required here"
+#endif
+
+#include <cstdio>
+#include <cstdlib>
+#include <vector>
 
 /////////////////////////////////////////
 //    v6----- v5
@@ -107,7 +116,7 @@ static GLfloat slice_position_data[] = {
    1.0f,-1.0f, 0.0f
 };
 
-static const GLfloat box_position_data[] =
+static const GLfloat box_position_data_local[] =
 {
    1, 1, 1,
   -1, 1, 1,
@@ -182,8 +191,7 @@ int main(const int argc, const char** argv)
   GLuint vertex_buffer[2];
   glGenBuffers(2, vertex_buffer);
   glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer[0]);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(box_position_data),
-  	       box_position_data, GL_STATIC_DRAW);
+
   glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer[1]);
   glBufferData(GL_ARRAY_BUFFER, sizeof(box_color_data),
 	       box_color_data, GL_STATIC_DRAW);
@@ -192,8 +200,6 @@ int main(const int argc, const char** argv)
   ASSERT(vposition_location != -1, "Failed to find 'vPosition' location");
   GLint vcolor_location    = glGetAttribLocation(program, "vColor");
   ASSERT(vcolor_location    != -1, "Failed to find 'vColor'    location");    
-  GLint mvp_location = glGetUniformLocation(program, "MVP");
-  ASSERT(mvp_location != -1, "Failed to find 'MVP' location");
 
   composer.Init();
   quad.Init();
@@ -201,14 +207,29 @@ int main(const int argc, const char** argv)
   check_error_gl("start rendering");
   while (!glfwWindowShouldClose(window))
   {
+
+    // compute vertices
+    const glm::mat4& mvp = GetMVPMatrix();
+    GLfloat box_position_data[24];
+    for (int i = 0; i < 8; ++i) {
+      glm::vec4 vertex(box_position_data_local[3 * i + 0],
+		       box_position_data_local[3 * i + 1],
+		       box_position_data_local[3 * i + 2], 1.f);
+      vertex = mvp * vertex;      
+      box_position_data[3 * i + 0] = vertex.x / vertex.w;
+      box_position_data[3 * i + 1] = vertex.y / vertex.w;
+      box_position_data[3 * i + 2] = vertex.z / vertex.w;
+    }
+        
+    // pass into program
     glUseProgram(program);
     glBindVertexArray(vertex_array);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vertex_element);
-    
-    glUniformMatrix4fv(mvp_location, 1, GL_FALSE, GetMVPMatrixPtr());
         
     glEnableVertexAttribArray(vposition_location);
     glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer[0]);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(box_position_data),
+		 box_position_data, GL_DYNAMIC_DRAW);
     glVertexAttribPointer(vposition_location, 3, GL_FLOAT, GL_FALSE, 0, (void*) 0);
 
     glEnableVertexAttribArray(vcolor_location);
