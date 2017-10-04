@@ -49,6 +49,16 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
   { glfwSetWindowShouldClose(window, GLFW_TRUE); }
 }
 
+static void cursor_position_callback(GLFWwindow* window, double xpos, double ypos)
+{
+  int left_state  = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT);
+  int right_state = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT);
+  if (left_state == GLFW_PRESS) { CameraDrag(xpos, ypos); }
+  else { CameraBeginDrag(xpos, ypos); }
+  if (right_state == GLFW_PRESS) { CameraZoom(xpos, ypos); }
+  else { CameraBeginZoom(xpos, ypos); }
+}
+
 static void window_size_callback(GLFWwindow* window, int width, int height)
 {
   glViewport(0, 0, width, height);
@@ -71,6 +81,7 @@ GLFWwindow* InitWindow()
   // Callback
   glfwSetKeyCallback(window, key_callback);
   glfwSetWindowSizeCallback(window, window_size_callback);
+  glfwSetCursorPosCallback(window, cursor_position_callback);
   // Ready
   glfwMakeContextCurrent(window);
   gladLoadGLLoader((GLADloadproc) glfwGetProcAddress);

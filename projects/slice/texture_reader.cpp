@@ -11,11 +11,11 @@ GLuint loadBMP_custom(const char * imagepath)
 
   // Data read from the header of the BMP file
   unsigned char header[54];
-  unsigned int dataPos;
-  unsigned int imageSize;
-  unsigned int width, height;
+  unsigned int  dataPos;
+  unsigned int  imageSize;
+  unsigned int  width, height;
   // Actual RGB data
-  unsigned char * data;
+  unsigned char*data;
 
   // Open the file
   FILE * file = fopen(imagepath,"rb");

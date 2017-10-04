@@ -61,7 +61,8 @@ static std::vector<Intersect> ixPts;
 void IntersectComputeBox(float vertices[24], float& zmin, float& zmax)
 {
   const glm::mat4& mvp = GetMVPMatrix();
-  float min = 10000.f, max = -10000.f;
+  // float min = CameraZNear(), max = CameraZFar();
+  float min = -1000.f, max = 1000.f;
   for (int i = 0; i < 8; ++i) {
     glm::vec4 vertex(box_position[3 * i + 0],
 		     box_position[3 * i + 1],

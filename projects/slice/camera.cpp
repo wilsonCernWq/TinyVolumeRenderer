@@ -1,4 +1,5 @@
 #include "camera.hpp"
+#include "trackball.hpp"
 #ifdef USE_GLM
 # include <glm/glm.hpp>
 # include <glm/gtc/matrix_transform.hpp>
@@ -22,10 +23,46 @@ struct Camera {
   Camera() { CameraUpdateView(); CameraUpdateProj(width, height); }
 };
 static Camera camera;
+static Trackball ball;
+
+//---------------------------------------------------------------------------------------
+// change from mouse coordinate to screen coordinate
+static glm::vec2 mouse2screen
+(int x, int y, float width, float height)
+{
+  return glm::vec2(2.0f * (float)x / width - 1.0f, 1.0f - 2.0f * (float)y / height);
+}
+
+//---------------------------------------------------------------------------------------
 
 size_t CameraWidth() { return camera.width; }
-
 size_t CameraHeight() { return camera.height; }
+float CameraZNear() { return camera.zNear; }
+float CameraZFar()  { return camera.zFar; }
+ 
+void CameraBeginZoom(float x, float y) 
+{
+  glm::vec2 p = mouse2screen(x, y, camera.width, camera.height);
+  ball.BeginZoom(p.x, p.y);
+}
+
+void CameraZoom(float x, float y) 
+{
+  glm::vec2 p = mouse2screen(x, y, camera.width, camera.height);
+  ball.Zoom(p.x, p.y);
+}
+
+void CameraBeginDrag(float x, float y) 
+{
+  glm::vec2 p = mouse2screen(x, y, camera.width, camera.height);
+  ball.BeginDrag(p.x, p.y);
+}
+
+void CameraDrag(float x, float y)
+{
+  glm::vec2 p = mouse2screen(x, y, camera.width, camera.height);
+  ball.Drag(p.x, p.y);
+}
 
 void CameraUpdateView()
 {
@@ -43,11 +80,8 @@ void CameraUpdateProj(size_t width, size_t height)
 
 const glm::mat4& GetMVPMatrix()
 {
-  const float angle = 1.f;
-  const glm::mat4 m =
-    glm::rotate(glm::mat4(1.f), angle, glm::vec3(0,1,0)) *
-    glm::rotate(glm::mat4(1.f), angle, glm::vec3(0,0,1));
-  camera.mvp = camera.proj * camera.view * m;
+  const glm::mat4 m = glm::rotate(glm::mat4(1.f), 0.f, glm::vec3(0,1,0));
+  camera.mvp = camera.proj * camera.view * ball.Matrix() * m;
   return camera.mvp;
 }
 
