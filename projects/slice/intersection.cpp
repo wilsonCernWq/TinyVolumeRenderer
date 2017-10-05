@@ -86,7 +86,6 @@ void IntersectReset(float z) {
   ixPts.clear();
   glm::vec4 x = GetProjection() * glm::vec4(0,0,z,1.f);
   plane = x.z / x.w;
-  // fprintf(stdout, "%f, %f\n", z, plane);
 };
 
 void IntersectPlane(const float box[24], const int a, const int b)

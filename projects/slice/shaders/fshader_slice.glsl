@@ -5,7 +5,7 @@ uniform sampler2D textf; // transfer function
 uniform float samplingRate;
 in vec2 fTex2dCoord;
 in vec3 fTex3dCoord;
-layout(location = 0) out vec4 finalcolor;
+layout(location = 0) out vec4 color;
 void main()
 {
   // read the data value (normalized)
@@ -15,7 +15,6 @@ void main()
   // background color
   vec4  bgcol   = texture(tex2d, fTex2dCoord);
   // compose -- front to back  
-  float alpha = (bgcol.a   + (1.f - bgcol.a) * datacol.a) / samplingRate;
-  vec3  color = bgcol.rgb + (1.f - bgcol.a) * datacol.rgb * datacol.a;
-  finalcolor = vec4(color, alpha);
+  float alpha = datacol.a / samplingRate;
+  color = bgcol + (1.f - bgcol.a) * datacol * alpha;
 };

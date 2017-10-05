@@ -21,7 +21,8 @@ int main(const int argc, const char** argv)
   GLFWwindow* window = InitWindow();
 
   // Load Data
-  GLuint texture_3d = loadRAW_custom(argv[1]);
+  int depth;
+  GLuint texture_3d = loadRAW_custom(argv[1], depth);
   GLuint texture_tf = loadTFN_custom();
   fprintf(stdout,
 	  "[renderer] texture_3d location %i\n"
@@ -34,8 +35,8 @@ int main(const int argc, const char** argv)
   screen.Init();
 
   // parameters
-  const float stp = 0.01f;
-  const float sr  = 1.f / stp;
+  const float sr  = 1.0f;
+  const float stp = 1.f / depth / sr;
   check_error_gl("start rendering");
   while (!glfwWindowShouldClose(window))
   {
@@ -43,7 +44,6 @@ int main(const int argc, const char** argv)
     float cameraCoordZMin, cameraCoordZMax;
     GLfloat boxClipCoordPosition[24];
     IntersectComputeBox(boxClipCoordPosition, cameraCoordZMin, cameraCoordZMax);
-    // fprintf(stdout, "%f, %f\n", cameraCoordZMin, cameraCoordZMax);
 
     // Compose Everything
     fbo.Reset();      
@@ -74,7 +74,7 @@ int main(const int argc, const char** argv)
       int readBuffer = (sliceIdx + 1) % 2;
       ++sliceIdx;
       fbo.BindSingle(drawBuffer);
-      composer.Compose(fbo.GetColor(readBuffer), texture_3d, texture_tf, sr / 100.f,
+      composer.Compose(fbo.GetColor(readBuffer), texture_3d, texture_tf, sr * 2.f,
     		       slice_position.data(), slice_texcoord.data(),
     		       slice_position.size());
       fbo.UnBindAll();

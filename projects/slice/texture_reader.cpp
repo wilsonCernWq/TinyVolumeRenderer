@@ -101,7 +101,7 @@ GLuint loadBMP_custom(const char * imagepath)
   return textureID;
 }
 
-GLuint loadRAW_custom(const char * volumepath)
+GLuint loadRAW_custom(const char * volumepath, int& depth)
 {
   // read data from disk
   fprintf(stdout, "[texture] start reading volume %s\n", volumepath);  
@@ -110,6 +110,7 @@ GLuint loadRAW_custom(const char * volumepath)
   ReadVolume(volumepath, data_type, data_size,
 	     data_dim[0], data_dim[1], data_dim[2], data_ptr_void);
   char* data_ptr = (char*)data_ptr_void;
+  depth = std::max(data_dim[0], std::max(data_dim[1], data_dim[2]));
   fprintf(stdout, "[texture] done reading data\n");  
   // calculate texture type
   GLenum internal_type;
