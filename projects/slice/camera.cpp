@@ -19,7 +19,7 @@ struct Camera {
   glm::vec3 focus = glm::vec3(0.f);
   glm::vec3 up    = glm::vec3(0.f,1.f,0.f);
   glm::mat4 view, proj;
-  glm::mat4 mvp; // cache
+  glm::mat4 mv, mvp; // cache
   Camera() { CameraUpdateView(); CameraUpdateProj(width, height); }
 };
 static Camera camera;
@@ -72,16 +72,27 @@ void CameraUpdateView()
 void CameraUpdateProj(size_t width, size_t height)
 {
   camera.aspect = width / (float) height;
-  camera.width = width;
+  camera.width  = width;
   camera.height = height;
   camera.proj = glm::perspective(camera.fovy/180.f*(float)M_PI,
 				 camera.aspect, camera.zNear, camera.zFar);
 }
 
+const glm::mat4& GetProjection() 
+{
+  return camera.proj;
+}
+
+const glm::mat4& GetMVMatrix()
+{ 
+  const glm::mat4 m = glm::rotate(glm::mat4(1.f), 0.f, glm::vec3(0,1,0));
+  camera.mv = camera.view * ball.Matrix() * m; 
+  return camera.mv;
+}
+
 const glm::mat4& GetMVPMatrix()
 {
-  const glm::mat4 m = glm::rotate(glm::mat4(1.f), 0.f, glm::vec3(0,1,0));
-  camera.mvp = camera.proj * camera.view * ball.Matrix() * m;
+  camera.mvp = camera.proj * GetMVMatrix();
   return camera.mvp;
 }
 

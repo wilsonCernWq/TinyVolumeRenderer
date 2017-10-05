@@ -55,36 +55,41 @@ struct Intersect {
 static glm::vec3  ixMeanPos = glm::vec3(0.f, 0.f, 0.f);
 static glm::vec3  ixMeanTex = glm::vec3(0.f, 0.f, 0.f);
 static std::vector<Intersect> ixPts;
-
+static float plane;
 //---------------------------------------------------------------------------------------
 
-void IntersectComputeBox(float vertices[24], float& zmin, float& zmax)
+void IntersectComputeBox(float clipCoordVertices[24], float& cameraZMin, float& cameraZMax)
 {
-  const glm::mat4& mvp = GetMVPMatrix();
-  // float min = CameraZNear(), max = CameraZFar();
-  float min = -1000.f, max = 1000.f;
+  const glm::mat4& mv = GetMVMatrix();
+  const glm::mat4& p  = GetProjection();
+  float min = 1000.f, max = -1000.f;
   for (int i = 0; i < 8; ++i) {
     glm::vec4 vertex(box_position[3 * i + 0],
 		     box_position[3 * i + 1],
 		     box_position[3 * i + 2], 1.f);
-    vertex = mvp * vertex;      
-    vertices[3 * i + 0] = vertex.x / vertex.w;
-    vertices[3 * i + 1] = vertex.y / vertex.w;
-    vertices[3 * i + 2] = vertex.z / vertex.w;
-    min = std::min(min, vertices[3 * i + 2]);
-    max = std::max(max, vertices[3 * i + 2]);      
+    vertex = mv * vertex;
+    float z = vertex.z / vertex.w;
+    vertex = p  * vertex;
+    clipCoordVertices[3 * i + 0] = vertex.x / vertex.w;
+    clipCoordVertices[3 * i + 1] = vertex.y / vertex.w;
+    clipCoordVertices[3 * i + 2] = vertex.z / vertex.w;
+    min = std::min(min, z);
+    max = std::max(max, z);      
   }
-  zmin = min;
-  zmax = max;
+  cameraZMin = min;
+  cameraZMax = max;
 }
-
-void IntersectReset() {
+#include <cstdio>
+void IntersectReset(float z) {
   ixMeanPos = glm::vec3(0.f, 0.f, 0.f);
   ixMeanTex = glm::vec3(0.f, 0.f, 0.f);
   ixPts.clear();
+  glm::vec4 x = GetProjection() * glm::vec4(0,0,z,1.f);
+  plane = x.z / x.w;
+  // fprintf(stdout, "%f, %f\n", z, plane);
 };
 
-void IntersectPlane(const float box[24], const int a, const int b, const float z)
+void IntersectPlane(const float box[24], const int a, const int b)
 {
   const glm::ivec2 segment(a,b);
   glm::vec3 vA (box[3 * segment.x + 0],
@@ -99,16 +104,16 @@ void IntersectPlane(const float box[24], const int a, const int b, const float z
   glm::vec3 tB (box_texcoord[3 * segment.y + 0],
 		box_texcoord[3 * segment.y + 1],
 		box_texcoord[3 * segment.y + 2]); 
-  if ((vA.z <= z && vB.z >= z) || (vB.z <= z && vA.z >= z))
+  if ((vA.z <= plane && vB.z >= plane) || (vB.z <= plane && vA.z >= plane))
   {
     // get intersection
     if (std::abs(vB.z - vA.z) < 0.001f) { return; }
-    const float ratio = (z - vA.z) / (vB.z - vA.z);
-    const glm::vec3 x = ratio * (vB - vA) + vA;
+    const float ratio = (plane - vA.z) / (vB.z - vA.z);
+    const glm::vec3 p = ratio * (vB - vA) + vA;
     const glm::vec3 t = ratio * (tB - tA) + tA;
-    ixPts.push_back({0.f, x, t});
+    ixPts.push_back({0.f, p, t});
     // get center
-    ixMeanPos += (x - ixMeanPos) / static_cast<float>(ixPts.size());
+    ixMeanPos += (p - ixMeanPos) / static_cast<float>(ixPts.size());
     ixMeanTex += (t - ixMeanTex) / static_cast<float>(ixPts.size());
   }
 }

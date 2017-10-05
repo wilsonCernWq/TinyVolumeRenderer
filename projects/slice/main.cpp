@@ -32,38 +32,40 @@ int main(const int argc, const char** argv)
   fbo.Init(640, 480, 2);
   composer.Init();
   screen.Init();
-  
+
+  // parameters
+  const float stp = 0.01f;
+  const float sr  = 1.f / stp;
   check_error_gl("start rendering");
   while (!glfwWindowShouldClose(window))
   {
     // Compute Vertices
-    float min = 10000.f, max = -10000.f;
-    GLfloat box_world_vertices[24];
-    IntersectComputeBox(box_world_vertices, min, max);
+    float cameraCoordZMin, cameraCoordZMax;
+    GLfloat boxClipCoordPosition[24];
+    IntersectComputeBox(boxClipCoordPosition, cameraCoordZMin, cameraCoordZMax);
+    // fprintf(stdout, "%f, %f\n", cameraCoordZMin, cameraCoordZMax);
 
     // Compose Everything
-    fbo.Reset();        
-    const float stp = 0.001f;
-    const float sr  = 1.f / stp;
+    fbo.Reset();      
     int sliceIdx = 0;
     int drawBuffer;
     int readBuffer;
-    for (float z = min; z < max; z += stp) // for each slice
-    {
+    for (float z = cameraCoordZMin; z < cameraCoordZMax; z += stp) // for each slice
+    { 
       composer.Bind();
-      IntersectReset();
-      IntersectPlane(box_world_vertices, 0,5, z);
-      IntersectPlane(box_world_vertices, 1,6, z);
-      IntersectPlane(box_world_vertices, 2,7, z);
-      IntersectPlane(box_world_vertices, 3,4, z);
-      IntersectPlane(box_world_vertices, 0,1, z);
-      IntersectPlane(box_world_vertices, 1,2, z);
-      IntersectPlane(box_world_vertices, 2,3, z);
-      IntersectPlane(box_world_vertices, 3,0, z);
-      IntersectPlane(box_world_vertices, 4,5, z);
-      IntersectPlane(box_world_vertices, 5,6, z);
-      IntersectPlane(box_world_vertices, 6,7, z);
-      IntersectPlane(box_world_vertices, 7,4, z);
+      IntersectReset(z);
+      IntersectPlane(boxClipCoordPosition, 0,5);
+      IntersectPlane(boxClipCoordPosition, 1,6);
+      IntersectPlane(boxClipCoordPosition, 2,7);
+      IntersectPlane(boxClipCoordPosition, 3,4);
+      IntersectPlane(boxClipCoordPosition, 0,1);
+      IntersectPlane(boxClipCoordPosition, 1,2);
+      IntersectPlane(boxClipCoordPosition, 2,3);
+      IntersectPlane(boxClipCoordPosition, 3,0);
+      IntersectPlane(boxClipCoordPosition, 4,5);
+      IntersectPlane(boxClipCoordPosition, 5,6);
+      IntersectPlane(boxClipCoordPosition, 6,7);
+      IntersectPlane(boxClipCoordPosition, 7,4);
       IntersectSort();
       std::vector<GLfloat> slice_position;
       std::vector<GLfloat> slice_texcoord;
@@ -72,7 +74,7 @@ int main(const int argc, const char** argv)
       int readBuffer = (sliceIdx + 1) % 2;
       ++sliceIdx;
       fbo.BindSingle(drawBuffer);
-      composer.Compose(fbo.GetColor(readBuffer), texture_3d, texture_tf, sr / 1000.f,
+      composer.Compose(fbo.GetColor(readBuffer), texture_3d, texture_tf, sr / 100.f,
     		       slice_position.data(), slice_texcoord.data(),
     		       slice_position.size());
       fbo.UnBindAll();

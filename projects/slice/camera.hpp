@@ -15,5 +15,7 @@ size_t CameraWidth();
 size_t CameraHeight();
 float CameraZNear();
 float CameraZFar();
+const glm::mat4& GetProjection();
+const glm::mat4& GetMVMatrix();
 const glm::mat4& GetMVPMatrix();
 const float*     GetMVPMatrixPtr();
