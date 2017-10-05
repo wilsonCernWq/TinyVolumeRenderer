@@ -6,6 +6,7 @@
 #else
 # error "GLM is required here"
 #endif
+#include <cstdio>
 #include <cmath>
 #include <algorithm>
 
@@ -79,7 +80,7 @@ void IntersectComputeBox(float clipCoordVertices[24], float& cameraZMin, float& 
   cameraZMin = min;
   cameraZMax = max;
 }
-#include <cstdio>
+
 void IntersectReset(float z) {
   ixMeanPos = glm::vec3(0.f, 0.f, 0.f);
   ixMeanTex = glm::vec3(0.f, 0.f, 0.f);
@@ -106,7 +107,7 @@ void IntersectPlane(const float box[24], const int a, const int b)
   if ((vA.z <= plane && vB.z >= plane) || (vB.z <= plane && vA.z >= plane))
   {
     // get intersection
-    if (std::abs(vB.z - vA.z) < 0.001f) { return; }
+    if (std::abs(vB.z - vA.z) < 0.0001f) { return; }
     const float ratio = (plane - vA.z) / (vB.z - vA.z);
     const glm::vec3 p = ratio * (vB - vA) + vA;
     const glm::vec3 t = ratio * (tB - tA) + tA;
