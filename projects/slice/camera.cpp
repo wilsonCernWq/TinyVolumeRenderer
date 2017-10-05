@@ -11,7 +11,7 @@
 //---------------------------------------------------------------------------------------
 
 struct Camera {
-  size_t width  = 1290, height = 960;
+  size_t width  = 640, height = 480;
   float  aspect = (float) width / height;
   float  zNear = 1.f, zFar = 50.f;
   float  fovy = 30.f;
