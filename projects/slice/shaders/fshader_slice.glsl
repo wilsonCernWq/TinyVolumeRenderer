@@ -14,7 +14,7 @@ void main()
   vec4  datacol = texture(textf, vec2(dataval, 0.f));
   // background color
   vec4  bgcol   = texture(tex2d, fTex2dCoord);
-  // compose -- front to back  
+  // compose -- back to front composition
   float alpha = datacol.a / samplingRate;
   color = bgcol + (1.f - bgcol.a) * datacol * alpha;
 };

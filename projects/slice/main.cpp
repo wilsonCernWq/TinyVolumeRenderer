@@ -30,7 +30,7 @@ int main(const int argc, const char** argv)
 	  texture_3d, texture_tf);
 
   // Initialize Objects
-  fbo.Init(640, 480, 2);
+  fbo.Init(CameraWidth(), CameraHeight(), 2);
   composer.Init();
   screen.Init();
 
@@ -50,7 +50,7 @@ int main(const int argc, const char** argv)
     int sliceIdx = 0;
     int drawBuffer;
     int readBuffer;
-    for (float z = cameraCoordZMin; z < cameraCoordZMax; z += stp) // for each slice
+    for (float z = cameraCoordZMax; z >= cameraCoordZMin; z -= stp) // for each slice
     { 
       composer.Bind();
       IntersectReset(z);
