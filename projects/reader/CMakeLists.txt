@@ -3,15 +3,6 @@
 get_filename_component(PID ${CMAKE_CURRENT_SOURCE_DIR} NAME)
 string(TOLOWER ${PID} PID)
 #
-# install dlls or shader
-file(GLOB SHADERS "*.glsl")
-set(COPYLIST ${COMMON_DLLS} ${SHADERS})
-if(EXECUTABLE_OUTPUT_PATH)
-  DeployRepo("${COPYLIST}" "${EXECUTABLE_OUTPUT_PATH}")
-else()
-  DeployRepo("${COPYLIST}" "${CMAKE_BINARY_DIR}")
-endif()
-#
 # include sources
 file(GLOB CXX  "*.cpp")
 file(GLOB HXX  "*.hpp")

@@ -25,13 +25,9 @@ endif()
 include(cmake/common.cmake)
 #
 # load projects
-set(projdir ${CMAKE_CURRENT_LIST_DIR}/projects)
-file(GLOB children RELATIVE ${projdir} ${projdir}/*)
-foreach(child ${children})
-  if(IS_DIRECTORY ${projdir}/${child})
-      add_subdirectory(${projdir}/${child})
-  endif()
-endforeach()
+add_subdirectory(projects/reader)
+add_subdirectory(projects/slice)
+add_subdirectory(projects/raycast)
 #
 # install data
 set(COPYLIST ${COMMON_DLLS})
