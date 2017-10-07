@@ -82,7 +82,7 @@ static const float texcoord_buffer_data[] = {
 void VolumeObject::Init()
 {
   // Compile Simple Shaders
-  program = LoadProgram("vshader_raycast.glsl","fshader_raycast.glsl");
+  program = LoadProgram("raycast/vshader_raycast.glsl","raycast/fshader_raycast.glsl");
   ASSERT(program != 0, "Failed to create program");
   
   // Find variable locations

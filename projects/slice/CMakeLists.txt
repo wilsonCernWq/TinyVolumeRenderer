@@ -7,9 +7,9 @@ string(TOLOWER ${PID} PID)
 file(GLOB SHADERS "shaders/*.glsl")
 set(COPYLIST ${SHADERS})
 if(EXECUTABLE_OUTPUT_PATH)
-  DeployRepo("${COPYLIST}" "${EXECUTABLE_OUTPUT_PATH}")
+  DeployRepo("${COPYLIST}" "${EXECUTABLE_OUTPUT_PATH}/${PID}")
 else()
-  DeployRepo("${COPYLIST}" "${CMAKE_BINARY_DIR}")
+  DeployRepo("${COPYLIST}" "${CMAKE_BINARY_DIR}/${PID}")
 endif()
 #
 # include sources

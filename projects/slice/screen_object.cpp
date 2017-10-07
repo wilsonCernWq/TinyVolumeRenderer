@@ -9,7 +9,7 @@ static float vertex_buffer_data[] = {
 
 void ScreenObject::Init()
 {
-  program = LoadProgram("vshader_quad.glsl","fshader_quad.glsl");
+  program = LoadProgram("slice/vshader_quad.glsl","slice/fshader_quad.glsl");
   ASSERT(program != 0, "Failed to create program");
   
   glGenVertexArrays(1, &vertex_array);

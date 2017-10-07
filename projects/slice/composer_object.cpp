@@ -3,7 +3,7 @@
 void ComposerObject::Init()
 {
   // Compile Simple Shaders
-  program = LoadProgram("vshader_slice.glsl","fshader_slice.glsl");
+  program = LoadProgram("slice/vshader_slice.glsl","slice/fshader_slice.glsl");
   ASSERT(program != 0, "Failed to create program");
   
   // Find variable locations
