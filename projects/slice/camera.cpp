@@ -20,53 +20,59 @@ struct Camera {
   glm::vec3 up    = glm::vec3(0.f,1.f,0.f);
   glm::mat4 view, proj;
   glm::mat4 mv, mvp; // cache
+  Trackball ball;
   Camera() { CameraUpdateView(); CameraUpdateProj(width, height); }
 };
 static Camera camera;
-static Trackball ball;
 
 //---------------------------------------------------------------------------------------
 // change from mouse coordinate to screen coordinate
 static glm::vec2 mouse2screen
 (int x, int y, float width, float height)
 {
-  return glm::vec2(2.0f * (float)x / width - 1.0f, 1.0f - 2.0f * (float)y / height);
+  return glm::vec2(2.0f * (float)x / width - 1.0f, 2.0f * (float)y / height - 1.0f);
 }
 
 //---------------------------------------------------------------------------------------
 
 size_t CameraWidth() { return camera.width; }
 size_t CameraHeight() { return camera.height; }
-float CameraZNear() { return camera.zNear; }
-float CameraZFar()  { return camera.zFar; }
+float  CameraZNear() { return camera.zNear; }
+float  CameraZFar()  { return camera.zFar; }
  
 void CameraBeginZoom(float x, float y) 
 {
   glm::vec2 p = mouse2screen(x, y, camera.width, camera.height);
-  ball.BeginZoom(p.x, p.y);
+  camera.ball.BeginZoom(p.x, p.y);
 }
 
 void CameraZoom(float x, float y) 
 {
   glm::vec2 p = mouse2screen(x, y, camera.width, camera.height);
-  ball.Zoom(p.x, p.y);
+  camera.ball.Zoom(p.x, p.y);
+  CameraUpdateView();
 }
 
 void CameraBeginDrag(float x, float y) 
 {
   glm::vec2 p = mouse2screen(x, y, camera.width, camera.height);
-  ball.BeginDrag(p.x, p.y);
+  camera.ball.BeginDrag(p.x, p.y);
 }
 
 void CameraDrag(float x, float y)
 {
   glm::vec2 p = mouse2screen(x, y, camera.width, camera.height);
-  ball.Drag(p.x, p.y);
+  camera.ball.Drag(p.x, p.y);
+  CameraUpdateView();
 }
 
 void CameraUpdateView()
 {
-  camera.view = glm::lookAt(camera.eye, camera.focus, camera.up);
+  glm::vec3 dir =
+    glm::vec3(camera.ball.Matrix() * glm::vec4(camera.eye - camera.focus, 0.f));
+  glm::vec3 up  =
+    glm::vec3(camera.ball.Matrix() * glm::vec4(camera.up, 0.f));
+  camera.view = glm::lookAt(dir + camera.focus, camera.focus, up);
 }
 
 void CameraUpdateProj(size_t width, size_t height)
@@ -84,9 +90,8 @@ const glm::mat4& GetProjection()
 }
 
 const glm::mat4& GetMVMatrix()
-{ 
-  const glm::mat4 m = glm::rotate(glm::mat4(1.f), 0.f, glm::vec3(0,1,0));
-  camera.mv = camera.view * ball.Matrix() * m; 
+{
+  camera.mv = camera.view * glm::mat4(1.0f); 
   return camera.mv;
 }
 

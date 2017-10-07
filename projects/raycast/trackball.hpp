@@ -7,8 +7,9 @@
 #define _TRACKBALL_H_
 #ifdef USE_GLM
 # include <glm/glm.hpp>
-# include <glm/gtx/vector_angle.hpp>
-# include <glm/gtx/transform.hpp>
+# include <glm/gtc/matrix_transform.hpp>
+#else
+# error "GLM is required here"
 #endif
 
 //
@@ -17,7 +18,7 @@
 //
 class Trackball {
 private:
-  bool  invrot = false; // inverse rotation
+  bool  inverse_rotate = true; // inverse rotation
   float radius = 1.0f;
   glm::mat4 matrix      = glm::mat4(1.0f);
   glm::mat4 matrix_prev = glm::mat4(1.0f);
@@ -29,10 +30,9 @@ private:
 public:
   /** constractors */
   Trackball() {}
-  Trackball(bool i) : invrot(i) {}
 
   void SetRadius(const float r) { radius = r; }
-  void SetInverseMode(bool r) { invrot = r; }
+  void SetInverseRotateMode(bool r) { inverse_rotate = r; }
 
   /**
    * @brief BeginDrag/Zoom: initialize drag/zoom

@@ -1,8 +1,9 @@
 #include "trackball.hpp"
 #ifdef USE_GLM
 # include <glm/glm.hpp>
-# include <glm/gtx/vector_angle.hpp>
-# include <glm/gtx/transform.hpp>
+# include <glm/gtc/matrix_transform.hpp>
+#else
+# error "GLM is required here"
 #endif
 #include <cmath>
   
@@ -18,16 +19,16 @@ void Trackball::Drag(float x, float y)
 {
   // get direction
   position = proj2surf(x, y);
-  glm::vec3 dir = (invrot ? -1.0f : 1.0f) * glm::normalize(glm::cross(position_prev, position));
+  glm::vec3 dir = glm::normalize(glm::cross(position_prev, position));
+  if (inverse_rotate) dir *= -1.0f;
   // compute rotation angle
-  float angle = glm::angle(glm::normalize(position_prev),
-			   glm::normalize(position));
-  if (angle < 0.01f) {
+  float angle = acos(glm::dot(glm::normalize(position_prev), glm::normalize(position)));
+  if (angle < 0.001f) {
     // to prevent position_prev == position, this will cause invalid value
     return;
   }
   else { // compute rotation
-    matrix = glm::rotate(angle, dir) * matrix_prev;
+    matrix = glm::rotate(matrix_prev, angle, dir);
   }
 }
 

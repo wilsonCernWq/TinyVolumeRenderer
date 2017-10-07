@@ -63,7 +63,7 @@ void IntersectComputeBox(float clipCoordVertices[24], float& cameraZMin, float& 
 {
   const glm::mat4& mv = GetMVMatrix();
   const glm::mat4& p  = GetProjection();
-  float min = 1000.f, max = -1000.f;
+  float min = CameraZFar(), max = CameraZNear();
   for (int i = 0; i < 8; ++i) {
     glm::vec4 vertex(box_position[3 * i + 0],
 		     box_position[3 * i + 1],
