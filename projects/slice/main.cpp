@@ -70,8 +70,8 @@ int main(const int argc, const char** argv)
       std::vector<GLfloat> slice_position;
       std::vector<GLfloat> slice_texcoord;
       IntersectFetch(slice_position, slice_texcoord);
-      int drawBuffer = sliceIdx % 2;
-      int readBuffer = (sliceIdx + 1) % 2;
+      drawBuffer = sliceIdx % 2;
+      readBuffer = (sliceIdx + 1) % 2;
       ++sliceIdx;
       fbo.BindSingle(drawBuffer);
       composer.Compose(fbo.GetColor(readBuffer), texture_3d, texture_tf, sr * 2.f,
