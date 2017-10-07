@@ -129,20 +129,23 @@ void VolumeObject::Init()
 void VolumeObject::Draw
 (const GLint texture_2d, const GLint texture_3d, const GLint texture_tf, const float sr)
 {
-  glUniform1f(samplingrate_location, sr);  
-  glUniformMatrix4fv(mvp_location, 1, GL_FALSE, (const GLfloat*) GetMVPMatrixPtr());
+  glUseProgram(program);
+  glBindVertexArray(vertex_array);
+  
+  glUniform1f(samplingrate_location, sr);
+  glUniformMatrix4fv(mvp_location, 1, GL_FALSE, GetMVPMatrixPtr());
   
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D, texture_2d);
   glUniform1i(texture3d_location, 0);
-  
-  glActiveTexture(GL_TEXTURE1);
-  glBindTexture(GL_TEXTURE_3D, texture_3d);
-  glUniform1i(texture3d_location, 1);
-  
-  glActiveTexture(GL_TEXTURE2);
-  glBindTexture(GL_TEXTURE_2D, texture_tf);    
-  glUniform1i(texturetf_location, 2);
+
+  // glActiveTexture(GL_TEXTURE1);
+  // glBindTexture(GL_TEXTURE_3D, texture_3d);
+  // glUniform1i(texture3d_location, 1);
+
+  // glActiveTexture(GL_TEXTURE2);
+  // glBindTexture(GL_TEXTURE_2D, texture_tf);    
+  // glUniform1i(texturetf_location, 2);
 
   glEnableVertexAttribArray(vposition_location);
   glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer[0]);
@@ -156,4 +159,9 @@ void VolumeObject::Draw
   // But we must clear depth
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   glDrawArrays(GL_TRIANGLES, 0, 36);
+
+  glUseProgram(0);
+  glBindVertexArray(0);
+  glDisableVertexAttribArray(vposition_location);
+  glDisableVertexAttribArray(vtexcoord_location);
 }

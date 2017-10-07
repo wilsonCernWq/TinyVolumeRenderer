@@ -3,11 +3,15 @@
 
 #include "glob.hpp"
 #include "camera.hpp"
+#include "framebuffer.hpp"
+#include "screen_object.hpp"
 #include "volume_object.hpp"
 #include "texture_reader.hpp"
 
 #include <vector>
 
+static FrameBufferObject fbo;
+static ScreenObject screen;
 static VolumeObject volume;
 
 int main(const int argc, const char** argv)
@@ -27,15 +31,21 @@ int main(const int argc, const char** argv)
 	  texture_2d, texture_3d, texture_tf);
 
   // Initialize Objects
+  fbo.Init(CameraWidth(), CameraHeight(), 1);
+  screen.Init();
   volume.Init();
-
+  
   // parameters
   const float sr  = 1.0f;
   const float stp = 1.f / depth / sr;
   check_error_gl("start rendering");
   while (!glfwWindowShouldClose(window))
   {
+    fbo.BindSingle(0);
     volume.Draw(texture_2d, texture_3d, texture_tf, sr);
+    fbo.UnBindAll();
+
+    screen.Draw(fbo.GetColor(0));
     glfwSwapBuffers(window);
     glfwPollEvents();
     check_error_gl("Rendering composer");    
