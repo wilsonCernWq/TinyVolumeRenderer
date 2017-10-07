@@ -6,14 +6,14 @@
 #include "intersection.hpp"
 #include "framebuffer.hpp"
 #include "screen_object.hpp"
-#include "composer_object.hpp"
+#include "volume_object.hpp"
 #include "texture_reader.hpp"
 
 #include <vector>
 
 static FrameBufferObject fbo;
-static ScreenObject   screen;
-static ComposerObject composer;
+static ScreenObject screen;
+static VolumeObject volume;
 
 int main(const int argc, const char** argv)
 {
@@ -31,8 +31,8 @@ int main(const int argc, const char** argv)
 
   // Initialize Objects
   fbo.Init(CameraWidth(), CameraHeight(), 2);
-  composer.Init();
   screen.Init();
+  volume.Init();
 
   // parameters
   const float sr  = 1.0f;
@@ -52,7 +52,7 @@ int main(const int argc, const char** argv)
     int readBuffer;
     for (float z = cameraCoordZMax; z >= cameraCoordZMin; z -= stp) // for each slice
     { 
-      composer.Bind();
+      volume.Bind();
       IntersectReset(z);
       IntersectPlane(boxClipCoordPosition, 0,5);
       IntersectPlane(boxClipCoordPosition, 1,6);
@@ -74,7 +74,7 @@ int main(const int argc, const char** argv)
       readBuffer = (sliceIdx + 1) % 2;
       ++sliceIdx;
       fbo.BindSingle(drawBuffer);
-      composer.Compose(fbo.GetColor(readBuffer), texture_3d, texture_tf, sr * 2.f,
+      volume.Compose(fbo.GetColor(readBuffer), texture_3d, texture_tf, sr * 2.f,
     		       slice_position.data(), slice_texcoord.data(),
     		       slice_position.size());
       fbo.UnBindAll();

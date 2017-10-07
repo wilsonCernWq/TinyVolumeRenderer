@@ -2,7 +2,7 @@
 #include "glob.hpp"
 #include "framebuffer.hpp"
 
-class ComposerObject {
+class VolumeObject {
 private:
   GLuint program = 0;
   GLint texture2d_location = -1;

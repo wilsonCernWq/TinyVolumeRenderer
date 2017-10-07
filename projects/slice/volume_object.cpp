@@ -1,6 +1,6 @@
-#include "composer_object.hpp"
+#include "volume_object.hpp"
 
-void ComposerObject::Init()
+void VolumeObject::Init()
 {
   // Compile Simple Shaders
   program = LoadProgram("slice/vshader_slice.glsl","slice/fshader_slice.glsl");
@@ -30,13 +30,13 @@ void ComposerObject::Init()
   ASSERT(vertex_buffer != 0, "Failed to create vertex buffer object");
 }
 
-void ComposerObject::Bind()
+void VolumeObject::Bind()
 {
   glUseProgram(program);
   glBindVertexArray(vertex_array);
 }
 
-void ComposerObject::Compose
+void VolumeObject::Compose
 (const GLint texture_2d, const GLint texture_3d, const GLint texture_tf, const float sr,
  const GLfloat* position_ptr, const GLfloat* texcoord_ptr, const size_t data_size)
 {
