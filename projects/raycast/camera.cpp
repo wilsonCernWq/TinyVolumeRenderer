@@ -39,7 +39,13 @@ size_t CameraWidth() { return camera.width; }
 size_t CameraHeight() { return camera.height; }
 float  CameraZNear() { return camera.zNear; }
 float  CameraZFar()  { return camera.zFar; }
- 
+const float* CameraPos() {
+  glm::vec3 pos =
+    glm::vec3(camera.ball.Matrix() * glm::vec4(camera.eye - camera.focus, 0.f)) +
+    camera.focus; 
+  return glm::value_ptr(pos);
+}
+
 void CameraBeginZoom(float x, float y) 
 {
   glm::vec2 p = mouse2screen(x, y, camera.width, camera.height);

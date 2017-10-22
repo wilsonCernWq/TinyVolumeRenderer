@@ -4,16 +4,20 @@
 class VolumeObject {
 private:
   GLuint program = 0;
-  GLint texture2d_location = -1;
+  // geometry
+  GLint camera_position = -1;
+  GLint mvp_position = -1;
+  // VAO
+  GLuint vertex_array  = 0;
+  GLuint vertex_buffer = 0;
+  GLint vposition_position = -1;
+  // uniforms
+  GLint samplingstep_location = -1;
+  GLint samplingrate_location = -1;
+  // texture
   GLint texture3d_location = -1;
   GLint texturetf_location = -1;
-  GLint vposition_location = -1;
-  GLint vtexcoord_location = -1;
-  GLint samplingrate_location = -1;
-  GLint mvp_location          = -1;
-  GLuint vertex_array  = 0;
-  GLuint vertex_buffer[2] = {0};
 public: 
   void Init();
-  void Draw(const GLint, const GLint, const GLint, const float sr);
+  void Draw(const GLint, const GLint, const float, const float);
 };
