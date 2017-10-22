@@ -29,6 +29,7 @@ void main()
     // raycasting
     vec3  dt_vec = samplingStep * abs(inv_dir);
     float dt = min(dt_vec.x, min(dt_vec.y, dt_vec.z));
+    float scale = 1.0 / samplingRate;
     for (float t = tenter; t < texit; t += dt)
     {
       // compute position
@@ -38,8 +39,8 @@ void main()
       // sample from transfer function
       vec4  datacol = texture(textf, vec2(dataval, 0.f));
       // compositing
-      color.rgb += (1 - color.a) * datacol.a * datacol.rgb / samplingRate;
-      color.a   += (1 - color.a) * datacol.a / samplingRate;
+      color.rgb += (1 - color.a) * datacol.a * datacol.rgb * scale;
+      color.a   += (1 - color.a) * datacol.a * scale;
       if (color.a >= 0.99) { break; }
     }
   }

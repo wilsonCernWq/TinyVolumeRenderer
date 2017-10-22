@@ -63,7 +63,7 @@ void IntersectComputeBox(float clipCoordVertices[24], float& cameraZMin, float& 
 {
   const glm::mat4& mv = GetMVMatrix();
   const glm::mat4& p  = GetProjection();
-  float min = CameraZFar(), max = CameraZNear();
+  float min = 1e30, max = -1e30;
   for (int i = 0; i < 8; ++i) {
     glm::vec4 vertex(box_position[3 * i + 0],
 		     box_position[3 * i + 1],
@@ -73,9 +73,9 @@ void IntersectComputeBox(float clipCoordVertices[24], float& cameraZMin, float& 
     vertex = p  * vertex;
     clipCoordVertices[3 * i + 0] = vertex.x / vertex.w;
     clipCoordVertices[3 * i + 1] = vertex.y / vertex.w;
-    clipCoordVertices[3 * i + 2] = vertex.z / vertex.w;
+    clipCoordVertices[3 * i + 2] = z; // linear depth
     min = std::min(min, z);
-    max = std::max(max, z);      
+    max = std::max(max, z);
   }
   cameraZMin = min;
   cameraZMax = max;
@@ -85,8 +85,7 @@ void IntersectReset(float z) {
   ixMeanPos = glm::vec3(0.f, 0.f, 0.f);
   ixMeanTex = glm::vec3(0.f, 0.f, 0.f);
   ixPts.clear();
-  glm::vec4 x = GetProjection() * glm::vec4(0,0,z,1.f);
-  plane = x.z / x.w;
+  plane = z;
 };
 
 void IntersectPlane(const float box[24], const int a, const int b)
@@ -109,7 +108,9 @@ void IntersectPlane(const float box[24], const int a, const int b)
     // get intersection
     if (std::abs(vB.z - vA.z) < 0.0001f) { return; }
     const float ratio = (plane - vA.z) / (vB.z - vA.z);
-    const glm::vec3 p = ratio * (vB - vA) + vA;
+    const glm::vec3 p = glm::vec3(ratio * (vB.x - vA.x) + vA.x,
+				  ratio * (vB.y - vA.y) + vA.y,
+				  0.f);
     const glm::vec3 t = ratio * (tB - tA) + tA;
     ixPts.push_back({0.f, p, t});
     // get center
@@ -127,7 +128,7 @@ void IntersectSort()
   if (ixPts.empty()) { return; }
   for (auto& p : ixPts) {
     const glm::vec3 v = glm::normalize(p.position - ixMeanPos);
-    if (std::abs(v.y) < 0.001f) {
+    if (std::abs(v.y) < 0.0001f) {
       p.angle = v.x > 0 ? 0.f : M_PI;
     }
     else {
