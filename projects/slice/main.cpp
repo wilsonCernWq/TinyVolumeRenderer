@@ -17,12 +17,29 @@ static VolumeObject volume;
 
 int main(const int argc, const char** argv)
 {
+  // Parse command
+  float sr = 1.f;
+  if (argc < 2) {
+    fprintf(stderr, "Error: insufficient input\n");
+    exit(-1);
+  }
+  const char *jsonfile = argv[1];
+  for (int i = 2; i < argc; ++i) {
+    std::string str(argv[i]);
+    if (str.compare("-sr") == 0) {
+      sr = std::atof(argv[++i]);
+    } else {
+      fprintf(stderr,"Error option: %s\n", argv[i]);
+      exit(-1);
+    }
+  }
+
   // Create Context
   GLFWwindow* window = InitWindow();
 
   // Load Data
   int depth;
-  GLuint texture_3d = loadRAW_custom(argv[1], depth);
+  GLuint texture_3d = loadRAW_custom(jsonfile, depth);
   GLuint texture_tf = loadTFN_custom();
   fprintf(stdout,
 	  "[renderer] texture_3d location %i\n"
@@ -35,7 +52,6 @@ int main(const int argc, const char** argv)
   volume.Init();
 
   // parameters
-  const float sr  = 1.0f;
   const float stp = 1.f / depth / sr;
   check_error_gl("start rendering");
   while (!glfwWindowShouldClose(window))
@@ -74,9 +90,9 @@ int main(const int argc, const char** argv)
       readBuffer = (sliceIdx + 1) % 2;
       ++sliceIdx;
       fbo.BindSingle(drawBuffer);
-      volume.Compose(fbo.GetColor(readBuffer), texture_3d, texture_tf, sr * 2.f,
-    		       slice_position.data(), slice_texcoord.data(),
-    		       slice_position.size());
+      volume.Compose(fbo.GetColor(readBuffer), texture_3d, texture_tf, sr,
+		     slice_position.data(), slice_texcoord.data(),
+		     slice_position.size());
       fbo.UnBindAll();
     }
 

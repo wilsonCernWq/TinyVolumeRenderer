@@ -16,5 +16,6 @@ void main()
   vec4  bgcol   = texture(tex2d, fTex2dCoord);
   // compose -- back to front composition
   float alpha = datacol.a / samplingRate;
-  color = bgcol + (1.f - bgcol.a) * datacol * alpha;
+  color.rgb = bgcol.rgb + (1.f - bgcol.a) * datacol.rgb * alpha;
+  color.a   = bgcol.a   + (1.f - bgcol.a) * alpha;
 };
