@@ -37,6 +37,7 @@ ENDIF()
 #
 # Initialize library pathes and dll path
 #
+SET(OPENGL_LIBS "") # those will be link for each project
 SET(COMMON_LIBS "") # those will be link for each project
 SET(COMMON_DLLS "") # those files will be copyed to the executable folder
 #
@@ -65,6 +66,7 @@ IF(ENABLE_GLEW)
     MESSAGE(STATUS " GLEW found!  ${GLEW_LIBRARIES}")
     INCLUDE_DIRECTORIES(${GLEW_INCLUDE_DIR})
     LIST(APPEND COMMON_LIBS ${GLEW_LIBRARIES})
+    LIST(APPEND OPENGL_LIBS ${GLEW_LIBRARIES})
   ELSE()
     MESSAGE(FATAL_ERROR " GLEW not found!")
   ENDIF()
@@ -79,6 +81,7 @@ IF(ENABLE_GLUT)
     MESSAGE(STATUS " GLUT found!  ${GLUT_LIBRARIES}")
     INCLUDE_DIRECTORIES(${GLUT_INCLUDE_DIR})
     LIST(APPEND COMMON_LIBS ${GLUT_LIBRARIES})
+    LIST(APPEND OPENGL_LIBS ${GLUT_LIBRARIES})
     IF(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
       MARK_AS_ADVANCED(GLUT_cocoa_LIBRARY)
       ADD_DEFINITIONS(-DUSE_GLUT)
@@ -104,11 +107,21 @@ IF(ENABLE_GLFW)
       ${GLFW_SOURCE_DIR}/deps/glad/glad.h
       ${GLFW_SOURCE_DIR}/deps/glad.c)
     LIST(APPEND COMMON_LIBS glfw glfw_glad)
+    LIST(APPEND OPENGL_LIBS glfw glfw_glad)
     ADD_DEFINITIONS(-DUSE_GLFW)
   ENDIF()
 ENDIF(ENABLE_GLFW)
 #
 #----------------------------------------------------------------------------
+#
+#--- ImGUI
+#
+IF(EXISTS ${PROJECT_SOURCE_DIR}/external/imgui)
+  ADD_SUBDIRECTORY(${PROJECT_SOURCE_DIR}/external/imgui)
+  INCLUDE_DIRECTORIES(${ImGUI_INCLUDE_DIR})
+  LIST(APPEND COMMON_LIBS ${ImGUI_LIBRARIES})
+  ADD_DEFINITIONS(-DUSE_IMGUI)
+ENDIF()
 #
 #--- glm
 #
