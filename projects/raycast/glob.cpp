@@ -46,6 +46,21 @@ static std::vector<OpacityPoint> tfn_o =
   {1.00f, 1.00}
 };
 
+template<typename T>
+static int find_idx(const T& A, float p, int l = -1, int r = -1)
+{
+  l = l == -1 ? 0 : l;
+  r = r == -1 ? A.size()-1 : r;
+  int m = (r + l) / 2;
+  if (A[l].p > p) { return l; }
+  else if (A[r].p <= p) { return r+1; }
+  else if ((m == l) || (m == r)) { return m + 1; }
+  else {
+    if (A[m].p <= p) { return find_idx(A, p, m, r); }
+    else { return find_idx(A, p, l, m); }
+  }
+}
+
 static bool CapturedByGUI()
 {
   ImGuiIO& io = ImGui::GetIO();
@@ -65,22 +80,20 @@ static void UpdateTFN(GLuint tex_tfn_volume)
   // interpolate trasnfer function
   const int tfn_w = 100;
   const int tfn_h = 256;
-  int cc_idx = 0;
-  int co_idx = 0;
   // TODO better transfer function
   std::vector<GLubyte> tfn_volume(tfn_h * 4);
   std::vector<GLubyte> tfn_opaque(tfn_w * tfn_h * 4);
   // interpolate volume texture
+//#pragma omp parallel for
   for (int i = 0; i < tfn_h; ++i)
   {
     const float p = clamp(i / (float)(tfn_h-1), 0.0f, 1.0f);
     // color
     {
-      if (p > tfn_c[cc_idx+1].p) { ++cc_idx; }
-      const float pl = tfn_c[cc_idx  ].p;
-      const float pr = tfn_c[cc_idx+1].p;
-      const int il = cc_idx;
-      const int ir = cc_idx+1;
+      const int ir = find_idx(tfn_c, p);
+      const int il = ir - 1;
+      const float pr = tfn_c[ir].p;
+      const float pl = tfn_c[il].p;
       const float r = lerp(tfn_c[il].r, tfn_c[ir].r, pl, pr, p);
       const float g = lerp(tfn_c[il].g, tfn_c[ir].g, pl, pr, p);
       const float b = lerp(tfn_c[il].b, tfn_c[ir].b, pl, pr, p);
@@ -90,11 +103,10 @@ static void UpdateTFN(GLuint tex_tfn_volume)
     }
     // opacity
     {
-      if (p > tfn_o[co_idx+1].p) { ++co_idx; }
-      const float pl = tfn_o[co_idx  ].p;
-      const float pr = tfn_o[co_idx+1].p;    
-      const int il = co_idx;
-      const int ir = co_idx+1;
+      const int ir = find_idx(tfn_o, p);
+      const int il = ir - 1;
+      const float pr = tfn_o[ir].p;
+      const float pl = tfn_o[il].p;
       const float a = lerp(tfn_o[il].a, tfn_o[ir].a, pl, pr, p);
       tfn_volume[4 * i + 3] = clamp(a, 0.f, 1.f) * 255.f;
     }
@@ -159,10 +171,9 @@ static void ShowExampleAppFixedOverlay(bool open)
 		   ImGuiWindowFlags_NoMove|
 		   ImGuiWindowFlags_NoSavedSettings))
   {
+    ImGui::Separator();
     ImGui::Text("FPS (Hz): %.f\n", fps);
-    // ImGui::Separator();
-    // ImGui::Text("Mouse Position: (%.1f,%.1f)",
-    // 		ImGui::GetIO().MousePos.x, ImGui::GetIO().MousePos.y);
+    ImGui::Separator();
     ImGui::End();
   }
   ImGui::PopStyleColor();
@@ -182,7 +193,11 @@ void RenderGUI(GLuint tex_tfn_volume)
       tex_tfn_changed = false;
     }
     // draw
-    ImGui::Text("1D Transfer Function");    
+    ImGui::Text("1D Transfer Function");
+    const float mouse_x = ImGui::GetMousePos().x;
+    const float mouse_y = ImGui::GetMousePos().y;
+    const float scroll_x = ImGui::GetScrollX();
+    const float scroll_y = ImGui::GetScrollY();
     float canvas_x = ImGui::GetCursorScreenPos().x;
     float canvas_y = ImGui::GetCursorScreenPos().y;
     float canvas_avail_x = ImGui::GetContentRegionAvail().x;
@@ -226,9 +241,14 @@ void RenderGUI(GLuint tex_tfn_volume)
       ImGui::InvisibleButton("tfn_palette", ImVec2(width,height));
       if (ImGui::IsItemClicked(1))
       {
-	const float x =  (ImGui::GetMousePos().x - canvas_x - margin - ImGui::GetScrollX());
-	const float y = -(ImGui::GetMousePos().y - canvas_y + margin - ImGui::GetScrollY());
-	printf("clicked background %f, %f\n", x/width, y/height);
+	float x =  (mouse_x - canvas_x - margin - scroll_x) / (float) width;
+	float y = -(mouse_y - canvas_y + margin - scroll_y) / (float) height;
+	x = clamp(x, 0.f, 1.f);
+	y = clamp(y, 0.f, 1.f);
+	const int idx = find_idx(tfn_o, x);
+	tfn_o.insert(tfn_o.begin()+idx, {x, y});
+	tex_tfn_changed = true;
+	printf("clicked background %i, %f, %f\n", idx, x, y);
       }	      
       ImGui::SetCursorScreenPos(ImVec2(canvas_x, canvas_y));
     }
