@@ -20,6 +20,12 @@ static GLuint tex_tfn_opaque = -1;
 struct ColorPoint {
   float p;
   float r, g, b;
+  unsigned long GetHex() {
+    return
+      ((static_cast<int>(r) & 0xff) << 16) +
+      ((static_cast<int>(g) & 0xff) << 8) +
+      ((static_cast<int>(b) & 0xff));
+  }
 };
 struct OpacityPoint {
   float p;
@@ -52,16 +58,17 @@ static float lerp(const float& l, const float& r,
   return l * dr + r * dl;
 }
 
-void RenderGUI(GLuint tex_tfn_volume)
+static void UpdateTFN(GLuint tex_tfn_volume)
 {
   // TODO better transfer function
   std::vector<GLubyte> tfn_volume;
   std::vector<GLubyte> tfn_opaque;
-  // Interpolate trasnfer function
+  // interpolate trasnfer function
   const int tfn_w = 100;
   const int tfn_h = 256;
   int cc_idx = 0;
   int co_idx = 0;
+  // interpolate volume texture
   for (int i = 0; i < tfn_h; ++i)
   {
     const float p = clamp(i / (float)(tfn_h-1), 0.0f, 1.0f);
@@ -90,6 +97,7 @@ void RenderGUI(GLuint tex_tfn_volume)
       tfn_volume.push_back(clamp(a, 0.f, 1.f) * 255.f);
     }
   }
+  // interpolate opaque palette
   for (int j = tfn_w - 1; j >= 0 ; --j) {
     for (int i = 0; i < tfn_h; ++i) {
       const float& r = tfn_volume[4 * i + 0];
@@ -112,28 +120,59 @@ void RenderGUI(GLuint tex_tfn_volume)
   }
   updateTFN_custom(tex_tfn_volume, tfn_volume.data(), tfn_h, 1);
   updateTFN_custom(tex_tfn_opaque, tfn_opaque.data(), tfn_h, tfn_w);
-  
-  // render GUI
+}
+
+void RenderGUI(GLuint tex_tfn_volume)
+{
+  // initialization
   ImGui_ImplGlfwGL3_NewFrame();
+  // render GUI
+  // ImGui::ShowTestWindow();
+  if (ImGui::Begin("1D Transfer Function"))
   {
+    // data process
+    UpdateTFN(tex_tfn_volume);
+    // draw
     ImGui::Text("1D Transfer Function");    
     float canvas_x = ImGui::GetCursorScreenPos().x;
     float canvas_y = ImGui::GetCursorScreenPos().y;
     float canvas_avail_x = ImGui::GetContentRegionAvail().x;
     float canvas_avail_y = ImGui::GetContentRegionAvail().y;
     {
-      const float margin = 5.f;
+      const float margin = 10.f;
+      const float width  = canvas_avail_x - 2.f * margin;
       const float height = 60.f;
-      canvas_x       += margin;
-      ImGui::Image(reinterpret_cast<void*>(tex_tfn_opaque),
-		   ImVec2(canvas_avail_x - margin, height));
-      canvas_x       -= margin;
+      // draw preview texture
+      ImGui::SetCursorScreenPos(ImVec2(canvas_x + margin, canvas_y));
+      ImGui::Image(reinterpret_cast<void*>(tex_tfn_opaque), ImVec2(width, height));
+      ImGui::SetCursorScreenPos(ImVec2(canvas_x, canvas_y + height + margin));
       canvas_y       += height + margin;
       canvas_avail_y -= height + margin;
+      // draw control points
       ImDrawList *draw_list = ImGui::GetWindowDrawList();
-    }    
+      for (int i = 0; i < tfn_o.size(); ++i) {
+	const ImVec2 pos(canvas_x + width  * tfn_o[i].p + margin,
+			 canvas_y - height * tfn_o[i].a - margin);
+	draw_list->AddCircleFilled(pos, 7, 0xFF565656);
+	draw_list->AddCircleFilled(pos, 6, 0xFFD8D8D8);
+	draw_list->AddCircleFilled(pos, 4, 0xFF051c33);
+	ImGui::SetCursorScreenPos(ImVec2(pos.x - 7, pos.y- 7));
+	ImGui::InvisibleButton(("Button-"+std::to_string(i)).c_str(), ImVec2(14,14));
+	if (ImGui::IsItemActive())
+	{
+	  ImVec2 value = ImGui::GetMouseDragDelta(0);
+	  ImVec2 delta = ImGui::GetIO().MouseDelta;	  
+	  tfn_o[i].a -= delta.y/height;
+	  if (i > 0 && i < tfn_o.size()-1) {
+	    tfn_o[i].p += delta.x/width;
+	  }
+	}
+	ImGui::SetCursorScreenPos(ImVec2(canvas_x, canvas_y));
+      }
+    }
   }
-  ImGui::Render();
+  ImGui::End();
+  ImGui::Render();    
 }
 
 //---------------------------------------------------------------------------------------

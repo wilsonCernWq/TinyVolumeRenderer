@@ -54,6 +54,7 @@ int main(const int argc, const char** argv)
   check_error_gl("start rendering");  
   while (!glfwWindowShouldClose(window))
   {
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     // render objects
     volume.Draw(texture_3d, texture_tf, sr * 2.f, stp);
     // render GUI objects
