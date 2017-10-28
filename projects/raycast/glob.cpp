@@ -1,10 +1,21 @@
 #include "glob.hpp"
 #include "camera.hpp"
+#include "texture_reader.hpp"
 #include <imgui.h>
 #include <imgui_impl_glfw_gl3.h>
 #include <fstream>
+#include <vector>
+#include <cmath>
 
 //---------------------------------------------------------------------------------------
+
+static std::vector<GLubyte> tfn =
+{
+  0,   0,   255, 0,
+  0,   255, 0,   127,
+  255, 0,   0,   255
+};
+static GLuint texture_tf_palette = -1;
 
 static bool CapturedByGUI()
 {
@@ -12,14 +23,60 @@ static bool CapturedByGUI()
   return (io.WantCaptureMouse);
 }
 
-void RenderGUI()
+void RenderGUI(GLuint texture_tf)
 {
+  // TODO better transfer function
+  const int tfn_opaque_width  = 100;
+  const int tfn_opaque_height = 256;
+  std::vector<GLubyte> tfn_opaque;
+  for (int j = 0; j < tfn_opaque_width; ++j) {
+    for (int i = 0; i < tfn_opaque_height; ++i) {
+      const float idx_ratio = i / (float)tfn_opaque_height * (tfn.size()/4-1);
+      const int idx_l = floor(idx_ratio);
+      const int idx_r = idx_l + 1;
+      const float idx_dl = idx_ratio - idx_l;
+      const float idx_dr = idx_r - idx_ratio;
+      const float r = tfn[4 * idx_l + 0] * idx_dr + tfn[4 * idx_r + 0] * idx_dl;
+      const float g = tfn[4 * idx_l + 1] * idx_dr + tfn[4 * idx_r + 1] * idx_dl;
+      const float b = tfn[4 * idx_l + 2] * idx_dr + tfn[4 * idx_r + 2] * idx_dl;
+      const float a = tfn[4 * idx_l + 3] * idx_dr + tfn[4 * idx_r + 3] * idx_dl;
+      if (j / (float) tfn_opaque_width * 255 > a) {
+	tfn_opaque.push_back(r);
+	tfn_opaque.push_back(g);
+	tfn_opaque.push_back(b);
+	tfn_opaque.push_back(255);
+      }
+      else {
+      	tfn_opaque.push_back(0.5 * (255 + r));
+      	tfn_opaque.push_back(0.5 * (255 + g));
+      	tfn_opaque.push_back(0.5 * (255 + b));
+      	tfn_opaque.push_back(255);
+      }
+    }
+  }
+  updateTFN_custom(texture_tf, tfn.data(), tfn.size()/4, 1);
+  updateTFN_custom(texture_tf_palette, tfn_opaque.data(),
+		   tfn_opaque_height, tfn_opaque_width);
+  
   // render GUI
   ImGui_ImplGlfwGL3_NewFrame();
   {
-    ImGui::Button("xx");
-    ImGui::Text("Terrain Parameter");
-    ImGui::Text("Control");
+    ImGui::Text("1D Transfer Function");    
+    float canvas_x = ImGui::GetCursorScreenPos().x;
+    float canvas_y = ImGui::GetCursorScreenPos().y;
+    float canvas_avail_x = ImGui::GetContentRegionAvail().x;
+    float canvas_avail_y = ImGui::GetContentRegionAvail().y;
+    {
+      const float margin = 5.f;
+      const float height = 60.f;
+      canvas_x       += margin;
+      ImGui::Image(reinterpret_cast<void*>(texture_tf_palette),
+		   ImVec2(canvas_avail_x - margin, height));
+      canvas_x       -= margin;
+      canvas_y       += height + margin;
+      canvas_avail_y -= height + margin;
+    }
+    
   }
   ImGui::Render();
 }
@@ -118,6 +175,7 @@ GLFWwindow* InitWindow()
   glEnable(GL_TEXTURE_3D);
   // Initialize GUI
   ImGui_ImplGlfwGL3_Init(window, false);
+  texture_tf_palette = loadTFN_custom();
   return window;
 }
 

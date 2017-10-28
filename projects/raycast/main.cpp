@@ -43,7 +43,7 @@ int main(const int argc, const char** argv)
 	  "[renderer] texture_3d location %i\n"
 	  "[renderer] texture_tf location %i\n",
 	  texture_3d, texture_tf);
-
+  
   // Initialize Objects
   fbo.Init(CameraWidth(), CameraHeight(), 1);
   screen.Init();
@@ -57,7 +57,7 @@ int main(const int argc, const char** argv)
     // render objects
     volume.Draw(texture_3d, texture_tf, sr * 2.f, stp);
     // render GUI objects
-    RenderGUI();
+    RenderGUI(texture_tf);
     // swap frame
     glfwSwapBuffers(window);
     glfwPollEvents();

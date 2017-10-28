@@ -11,4 +11,8 @@ GLuint loadRAW_custom(const char * volumepath, int& depth);
 
 // Load a Tfn
 GLuint loadTFN_custom();
+void   updateTFN_custom(const GLuint textureID,
+			const GLubyte* palette,
+			const int width, const int height);
+
 #endif

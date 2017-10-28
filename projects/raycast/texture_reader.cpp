@@ -183,19 +183,11 @@ GLuint loadRAW_custom(const char * volumepath, int& depth)
 
 GLuint loadTFN_custom()
 {
-  // TODO better transfer function
-  GLubyte texels[32] =
-  {
-    0,   0,   255, 0,
-    0,   255, 0,   127,
-    255, 0,   0,   255
-  };
   // Create one OpenGL texture
   check_error_gl("before texture");
   GLuint textureID;
   glGenTextures(1, &textureID);   
   glBindTexture(GL_TEXTURE_2D, textureID);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 3, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, texels);
   check_error_gl("generate texture");
   // ... nice trilinear filtering ...    
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
@@ -204,4 +196,12 @@ GLuint loadTFN_custom()
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
   // Return the ID of the texture we just created
   return textureID;  
+}
+
+void updateTFN_custom(const GLuint textureID, const GLubyte* palette,
+		      const int width, const int height)
+{
+  glBindTexture(GL_TEXTURE_2D, textureID);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA,
+	       GL_UNSIGNED_BYTE, static_cast<const void*>(palette));
 }
