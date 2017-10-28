@@ -6,16 +6,32 @@
 #include <fstream>
 #include <vector>
 #include <cmath>
+#include <algorithm>    // std::max
+
 
 //---------------------------------------------------------------------------------------
 
-static std::vector<GLubyte> tfn =
-{
-  0,   0,   255, 0,
-  0,   255, 0,   127,
-  255, 0,   0,   255
-};
 static GLuint texture_tf_palette = -1;
+struct ColorPoint {
+  float pos;
+  float r, g, b;
+};
+struct OpacityPoint {
+  float pos;
+  float a;
+};
+static std::vector<ColorPoint> tfn_color =
+{
+  {0.0f, 0,   0,   255},
+  {0.5f, 0,   255, 0  },
+  {1.0f, 255, 0,   0  }
+};
+static std::vector<OpacityPoint> tfn_opacity =
+{
+  {0.0f, 0.0},
+  {0.5f, 0.5},
+  {1.0f, 1.0}
+};
 
 static bool CapturedByGUI()
 {
@@ -26,20 +42,53 @@ static bool CapturedByGUI()
 void RenderGUI(GLuint texture_tf)
 {
   // TODO better transfer function
+  std::vector<GLubyte> tfn;
+  std::vector<GLubyte> tfn_opaque;
+  // Interpolate trasnfer function
   const int tfn_opaque_width  = 100;
   const int tfn_opaque_height = 256;
-  std::vector<GLubyte> tfn_opaque;
-  for (int j = 0; j < tfn_opaque_width; ++j) {
+  int currCIdx = 0;
+  int currOIdx = 0;
+  for (int i = 0; i < tfn_opaque_height; ++i)
+  {
+    const float pos = std::min(1.f, std::max(0.f, i / (float)(tfn_opaque_height-1)));
+    // color
+    {
+      if (pos > tfn_color[currCIdx+1].pos) { ++currCIdx; }
+      const float pos_l = tfn_color[currCIdx  ].pos;
+      const float pos_r = tfn_color[currCIdx+1].pos;    
+      const int idx_l = currCIdx;
+      const int idx_r = currCIdx+1;    
+      const float dl = (pos_r - pos_l) > 0 ? (pos - pos_l) / (pos_r - pos_l) : 0;
+      const float dr = 1.f - dl;
+      const float r = tfn_color[idx_l].r * dr + tfn_color[idx_r].r * dl;
+      const float g = tfn_color[idx_l].g * dr + tfn_color[idx_r].g * dl;
+      const float b = tfn_color[idx_l].b * dr + tfn_color[idx_r].b * dl;
+      tfn.push_back(r);
+      tfn.push_back(g);
+      tfn.push_back(b);
+      //printf("%f, %f, %f, ",r, g, b);
+    }
+    // opacity
+    {
+      if (pos > tfn_opacity[currOIdx+1].pos) { ++currOIdx; }
+      const float pos_l = tfn_opacity[currOIdx  ].pos;
+      const float pos_r = tfn_opacity[currOIdx+1].pos;    
+      const int idx_l = currOIdx;
+      const int idx_r = currOIdx+1;
+      const float dl = (pos_r - pos_l) > 0 ? (pos - pos_l) / (pos_r - pos_l) : 0;
+      const float dr = 1.f - dl;
+      const float a = tfn_opacity[idx_l].a * dr + tfn_opacity[idx_r].a * dl;
+      tfn.push_back(a * 255);
+      //printf("%f\n",a);
+    }
+  }
+  for (int j = tfn_opaque_width - 1; j >= 0 ; --j) {
     for (int i = 0; i < tfn_opaque_height; ++i) {
-      const float idx_ratio = i / (float)tfn_opaque_height * (tfn.size()/4-1);
-      const int idx_l = floor(idx_ratio);
-      const int idx_r = idx_l + 1;
-      const float idx_dl = idx_ratio - idx_l;
-      const float idx_dr = idx_r - idx_ratio;
-      const float r = tfn[4 * idx_l + 0] * idx_dr + tfn[4 * idx_r + 0] * idx_dl;
-      const float g = tfn[4 * idx_l + 1] * idx_dr + tfn[4 * idx_r + 1] * idx_dl;
-      const float b = tfn[4 * idx_l + 2] * idx_dr + tfn[4 * idx_r + 2] * idx_dl;
-      const float a = tfn[4 * idx_l + 3] * idx_dr + tfn[4 * idx_r + 3] * idx_dl;
+      const float& r = tfn[4 * i + 0];
+      const float& g = tfn[4 * i + 1];
+      const float& b = tfn[4 * i + 2];
+      const float& a = tfn[4 * i + 3];
       if (j / (float) tfn_opaque_width * 255 > a) {
 	tfn_opaque.push_back(r);
 	tfn_opaque.push_back(g);
@@ -75,8 +124,8 @@ void RenderGUI(GLuint texture_tf)
       canvas_x       -= margin;
       canvas_y       += height + margin;
       canvas_avail_y -= height + margin;
-    }
-    
+      ImDrawList *draw_list = ImGui::GetWindowDrawList();
+    }    
   }
   ImGui::Render();
 }
