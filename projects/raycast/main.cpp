@@ -7,7 +7,6 @@
 #include "screen_object.hpp"
 #include "volume_object.hpp"
 #include "texture_reader.hpp"
-
 #include <vector>
 
 static FrameBufferObject fbo;
@@ -51,18 +50,22 @@ int main(const int argc, const char** argv)
   volume.Init();
   
   // parameters
-  const float stp = 1.f / depth / sr;
-  check_error_gl("start rendering");
+  const float stp = 1.f / depth / sr; // raycasting step
+  check_error_gl("start rendering");  
   while (!glfwWindowShouldClose(window))
   {
+    // render objects
     volume.Draw(texture_3d, texture_tf, sr * 2.f, stp);
+    // render GUI objects
+    RenderGUI();
+    // swap frame
     glfwSwapBuffers(window);
     glfwPollEvents();
     check_error_gl("Rendering composer");    
   }
-
+  
   // Exit
-  glfwDestroyWindow(window);
+  ShutdownWindow(window);
   glfwTerminate();
   return EXIT_SUCCESS;
 }

@@ -7,5 +7,8 @@
 
 GLuint LoadProgram(const char*, const char*);
 
+void RenderGUI();
+
 GLFWwindow* InitWindow();
 
+void ShutdownWindow(GLFWwindow*);

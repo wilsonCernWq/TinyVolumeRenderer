@@ -1,6 +1,12 @@
 #include "glob.hpp"
 #include "camera.hpp"
+#include <imgui.h>
+#include <imgui_impl_glfw_gl3.h>
 #include <fstream>
+
+//---------------------------------------------------------------------------------------
+
+static bool CapturedByGUI();
 
 //---------------------------------------------------------------------------------------
 
@@ -53,12 +59,15 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
 
 static void cursor_position_callback(GLFWwindow* window, double xpos, double ypos)
 {
-  int left_state  = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT);
-  int right_state = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT);
-  if (left_state == GLFW_PRESS) { CameraDrag(xpos, ypos); }
-  else { CameraBeginDrag(xpos, ypos); }
-  if (right_state == GLFW_PRESS) { CameraZoom(xpos, ypos); }
-  else { CameraBeginZoom(xpos, ypos); }
+  if (!CapturedByGUI())
+  {
+    int left_state  = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT);
+    int right_state = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT);
+    if (left_state == GLFW_PRESS) { CameraDrag(xpos, ypos); }
+    else { CameraBeginDrag(xpos, ypos); }
+    if (right_state == GLFW_PRESS) { CameraZoom(xpos, ypos); }
+    else { CameraBeginZoom(xpos, ypos); }
+  }
 }
 
 static void window_size_callback(GLFWwindow* window, int width, int height)
@@ -91,6 +100,33 @@ GLFWwindow* InitWindow()
   // Setup OpenGL
   glEnable(GL_DEPTH_TEST);
   glEnable(GL_TEXTURE_3D);
+  // Initialize GUI
+  ImGui_ImplGlfwGL3_Init(window, false);
   return window;
 }
 
+void ShutdownWindow(GLFWwindow* window)
+{
+  ImGui_ImplGlfwGL3_Shutdown();
+  glfwDestroyWindow(window);
+}
+
+//---------------------------------------------------------------------------------------
+
+static bool CapturedByGUI()
+{
+  ImGuiIO& io = ImGui::GetIO();
+  return (io.WantCaptureMouse);
+}
+
+void RenderGUI()
+{
+  // render GUI
+  ImGui_ImplGlfwGL3_NewFrame();
+  {
+    ImGui::Button("xx");
+    ImGui::Text("Terrain Parameter");
+    ImGui::Text("Control");
+  }
+  ImGui::Render();
+}
