@@ -8,25 +8,30 @@
 #include <cmath>
 #include <algorithm>    // std::max
 
+template<class T>
+constexpr const T& clamp( const T& v, const T& lo, const T& hi )
+{
+  return std::min(hi, std::max(lo, v));
+}
 
 //---------------------------------------------------------------------------------------
 
-static GLuint texture_tf_palette = -1;
+static GLuint tex_tfn_opaque = -1;
 struct ColorPoint {
-  float pos;
+  float p;
   float r, g, b;
 };
 struct OpacityPoint {
-  float pos;
+  float p;
   float a;
 };
-static std::vector<ColorPoint> tfn_color =
+static std::vector<ColorPoint>   tfn_c =
 {
   {0.0f, 0,   0,   255},
   {0.5f, 0,   255, 0  },
   {1.0f, 255, 0,   0  }
 };
-static std::vector<OpacityPoint> tfn_opacity =
+static std::vector<OpacityPoint> tfn_o =
 {
   {0.0f, 0.0},
   {0.5f, 0.5},
@@ -39,73 +44,74 @@ static bool CapturedByGUI()
   return (io.WantCaptureMouse);
 }
 
-void RenderGUI(GLuint texture_tf)
+static float lerp(const float& l, const float& r,
+		  const float& pl, const float& pr, const float& p)
+{
+  const float dl = std::abs(pr - pl) > 0.0001f ? (p - pl) / (pr - pl) : 0.f;
+  const float dr = 1.f - dl;
+  return l * dr + r * dl;
+}
+
+void RenderGUI(GLuint tex_tfn_volume)
 {
   // TODO better transfer function
-  std::vector<GLubyte> tfn;
+  std::vector<GLubyte> tfn_volume;
   std::vector<GLubyte> tfn_opaque;
   // Interpolate trasnfer function
-  const int tfn_opaque_width  = 100;
-  const int tfn_opaque_height = 256;
-  int currCIdx = 0;
-  int currOIdx = 0;
-  for (int i = 0; i < tfn_opaque_height; ++i)
+  const int tfn_w = 100;
+  const int tfn_h = 256;
+  int cc_idx = 0;
+  int co_idx = 0;
+  for (int i = 0; i < tfn_h; ++i)
   {
-    const float pos = std::min(1.f, std::max(0.f, i / (float)(tfn_opaque_height-1)));
+    const float p = clamp(i / (float)(tfn_h-1), 0.0f, 1.0f);
     // color
     {
-      if (pos > tfn_color[currCIdx+1].pos) { ++currCIdx; }
-      const float pos_l = tfn_color[currCIdx  ].pos;
-      const float pos_r = tfn_color[currCIdx+1].pos;    
-      const int idx_l = currCIdx;
-      const int idx_r = currCIdx+1;    
-      const float dl = (pos_r - pos_l) > 0 ? (pos - pos_l) / (pos_r - pos_l) : 0;
-      const float dr = 1.f - dl;
-      const float r = tfn_color[idx_l].r * dr + tfn_color[idx_r].r * dl;
-      const float g = tfn_color[idx_l].g * dr + tfn_color[idx_r].g * dl;
-      const float b = tfn_color[idx_l].b * dr + tfn_color[idx_r].b * dl;
-      tfn.push_back(r);
-      tfn.push_back(g);
-      tfn.push_back(b);
-      //printf("%f, %f, %f, ",r, g, b);
+      if (p > tfn_c[cc_idx+1].p) { ++cc_idx; }
+      const float pl = tfn_c[cc_idx  ].p;
+      const float pr = tfn_c[cc_idx+1].p;
+      const int il = cc_idx;
+      const int ir = cc_idx+1;
+      const float r = lerp(tfn_c[il].r, tfn_c[ir].r, pl, pr, p);
+      const float g = lerp(tfn_c[il].g, tfn_c[ir].g, pl, pr, p);
+      const float b = lerp(tfn_c[il].b, tfn_c[ir].b, pl, pr, p);
+      tfn_volume.push_back(r);
+      tfn_volume.push_back(g);
+      tfn_volume.push_back(b);
     }
     // opacity
     {
-      if (pos > tfn_opacity[currOIdx+1].pos) { ++currOIdx; }
-      const float pos_l = tfn_opacity[currOIdx  ].pos;
-      const float pos_r = tfn_opacity[currOIdx+1].pos;    
-      const int idx_l = currOIdx;
-      const int idx_r = currOIdx+1;
-      const float dl = (pos_r - pos_l) > 0 ? (pos - pos_l) / (pos_r - pos_l) : 0;
-      const float dr = 1.f - dl;
-      const float a = tfn_opacity[idx_l].a * dr + tfn_opacity[idx_r].a * dl;
-      tfn.push_back(a * 255);
-      //printf("%f\n",a);
+      if (p > tfn_o[co_idx+1].p) { ++co_idx; }
+      const float pl = tfn_o[co_idx  ].p;
+      const float pr = tfn_o[co_idx+1].p;    
+      const int il = co_idx;
+      const int ir = co_idx+1;
+      const float a = lerp(tfn_o[il].a, tfn_o[ir].a, pl, pr, p);
+      tfn_volume.push_back(clamp(a, 0.f, 1.f) * 255.f);
     }
   }
-  for (int j = tfn_opaque_width - 1; j >= 0 ; --j) {
-    for (int i = 0; i < tfn_opaque_height; ++i) {
-      const float& r = tfn[4 * i + 0];
-      const float& g = tfn[4 * i + 1];
-      const float& b = tfn[4 * i + 2];
-      const float& a = tfn[4 * i + 3];
-      if (j / (float) tfn_opaque_width * 255 > a) {
+  for (int j = tfn_w - 1; j >= 0 ; --j) {
+    for (int i = 0; i < tfn_h; ++i) {
+      const float& r = tfn_volume[4 * i + 0];
+      const float& g = tfn_volume[4 * i + 1];
+      const float& b = tfn_volume[4 * i + 2];
+      const float& a = tfn_volume[4 * i + 3];
+      if (j / (float) tfn_w * 255.f > a) {
 	tfn_opaque.push_back(r);
 	tfn_opaque.push_back(g);
 	tfn_opaque.push_back(b);
 	tfn_opaque.push_back(255);
       }
       else {
-      	tfn_opaque.push_back(0.5 * (255 + r));
-      	tfn_opaque.push_back(0.5 * (255 + g));
-      	tfn_opaque.push_back(0.5 * (255 + b));
+      	tfn_opaque.push_back(0.5f * (255.f + r));
+      	tfn_opaque.push_back(0.5f * (255.f + g));
+      	tfn_opaque.push_back(0.5f * (255.f + b));
       	tfn_opaque.push_back(255);
       }
     }
   }
-  updateTFN_custom(texture_tf, tfn.data(), tfn.size()/4, 1);
-  updateTFN_custom(texture_tf_palette, tfn_opaque.data(),
-		   tfn_opaque_height, tfn_opaque_width);
+  updateTFN_custom(tex_tfn_volume, tfn_volume.data(), tfn_h, 1);
+  updateTFN_custom(tex_tfn_opaque, tfn_opaque.data(), tfn_h, tfn_w);
   
   // render GUI
   ImGui_ImplGlfwGL3_NewFrame();
@@ -119,7 +125,7 @@ void RenderGUI(GLuint texture_tf)
       const float margin = 5.f;
       const float height = 60.f;
       canvas_x       += margin;
-      ImGui::Image(reinterpret_cast<void*>(texture_tf_palette),
+      ImGui::Image(reinterpret_cast<void*>(tex_tfn_opaque),
 		   ImVec2(canvas_avail_x - margin, height));
       canvas_x       -= margin;
       canvas_y       += height + margin;
@@ -222,9 +228,13 @@ GLFWwindow* InitWindow()
   // Setup OpenGL
   glEnable(GL_DEPTH_TEST);
   glEnable(GL_TEXTURE_3D);
-  // Initialize GUI
-  ImGui_ImplGlfwGL3_Init(window, false);
-  texture_tf_palette = loadTFN_custom();
+  // GUI
+  {
+    // Initialize GUI
+    ImGui_ImplGlfwGL3_Init(window, false);
+    // Create GUI Objects
+    tex_tfn_opaque = loadTFN_custom();
+  }
   return window;
 }
 

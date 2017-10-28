@@ -7,7 +7,7 @@
 
 GLuint LoadProgram(const char*, const char*);
 
-void RenderGUI(GLuint texture_tf);
+void RenderGUI(GLuint);
 
 GLFWwindow* InitWindow();
 
