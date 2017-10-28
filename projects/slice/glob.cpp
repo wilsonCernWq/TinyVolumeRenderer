@@ -19,6 +19,8 @@ static const char* read_file(const char* fname)
 
 GLuint LoadProgram(const char* vshader_fname, const char* fshader_fname)
 {
+  fprintf(stdout, "[shader] reading vertex shader file %s\n", vshader_fname);
+  fprintf(stdout, "[shader] reading fragment shader file %s\n", fshader_fname);
   GLuint vshader = glCreateShader(GL_VERTEX_SHADER);
   const char* vshader_text = read_file(vshader_fname);
   glShaderSource(vshader, 1, &vshader_text, NULL);
