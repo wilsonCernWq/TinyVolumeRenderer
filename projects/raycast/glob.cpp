@@ -6,7 +6,23 @@
 
 //---------------------------------------------------------------------------------------
 
-static bool CapturedByGUI();
+static bool CapturedByGUI()
+{
+  ImGuiIO& io = ImGui::GetIO();
+  return (io.WantCaptureMouse);
+}
+
+void RenderGUI()
+{
+  // render GUI
+  ImGui_ImplGlfwGL3_NewFrame();
+  {
+    ImGui::Button("xx");
+    ImGui::Text("Terrain Parameter");
+    ImGui::Text("Control");
+  }
+  ImGui::Render();
+}
 
 //---------------------------------------------------------------------------------------
 
@@ -87,7 +103,7 @@ GLFWwindow* InitWindow()
   glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, true);
   // Create Window
   GLFWwindow* window = glfwCreateWindow(CameraWidth(), CameraHeight(),
-					"Sliced Based Volume Renderer", NULL, NULL);
+					"Raycast Volume Renderer", NULL, NULL);
   if (!window) { glfwTerminate(); exit(EXIT_FAILURE); }
   // Callback
   glfwSetKeyCallback(window, key_callback);
@@ -107,26 +123,8 @@ GLFWwindow* InitWindow()
 
 void ShutdownWindow(GLFWwindow* window)
 {
+  // Shutup GUI
   ImGui_ImplGlfwGL3_Shutdown();
+  // Shutup window
   glfwDestroyWindow(window);
-}
-
-//---------------------------------------------------------------------------------------
-
-static bool CapturedByGUI()
-{
-  ImGuiIO& io = ImGui::GetIO();
-  return (io.WantCaptureMouse);
-}
-
-void RenderGUI()
-{
-  // render GUI
-  ImGui_ImplGlfwGL3_NewFrame();
-  {
-    ImGui::Button("xx");
-    ImGui::Text("Terrain Parameter");
-    ImGui::Text("Control");
-  }
-  ImGui::Render();
 }
