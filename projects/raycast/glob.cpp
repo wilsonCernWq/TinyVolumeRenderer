@@ -6,14 +6,14 @@
 #include <fstream>
 #include <vector>
 #include <cmath>
-#include <algorithm>    // std::max
+#include <algorithm>
+#include <chrono>
 
 template<class T>
 constexpr const T& clamp( const T& v, const T& lo, const T& hi )
 {
   return std::min(hi, std::max(lo, v));
 }
-
 //---------------------------------------------------------------------------------------
 static GLuint tex_tfn_changed = true;
 static GLuint tex_tfn_opaque = -1;
@@ -62,14 +62,14 @@ static float lerp(const float& l, const float& r,
 
 static void UpdateTFN(GLuint tex_tfn_volume)
 {
-  // TODO better transfer function
-  std::vector<GLubyte> tfn_volume;
-  std::vector<GLubyte> tfn_opaque;
   // interpolate trasnfer function
   const int tfn_w = 100;
   const int tfn_h = 256;
   int cc_idx = 0;
   int co_idx = 0;
+  // TODO better transfer function
+  std::vector<GLubyte> tfn_volume(tfn_h * 4);
+  std::vector<GLubyte> tfn_opaque(tfn_w * tfn_h * 4);
   // interpolate volume texture
   for (int i = 0; i < tfn_h; ++i)
   {
@@ -84,9 +84,9 @@ static void UpdateTFN(GLuint tex_tfn_volume)
       const float r = lerp(tfn_c[il].r, tfn_c[ir].r, pl, pr, p);
       const float g = lerp(tfn_c[il].g, tfn_c[ir].g, pl, pr, p);
       const float b = lerp(tfn_c[il].b, tfn_c[ir].b, pl, pr, p);
-      tfn_volume.push_back(r);
-      tfn_volume.push_back(g);
-      tfn_volume.push_back(b);
+      tfn_volume[4 * i + 0] = r;
+      tfn_volume[4 * i + 1] = g;
+      tfn_volume[4 * i + 2] = b;
     }
     // opacity
     {
@@ -96,27 +96,28 @@ static void UpdateTFN(GLuint tex_tfn_volume)
       const int il = co_idx;
       const int ir = co_idx+1;
       const float a = lerp(tfn_o[il].a, tfn_o[ir].a, pl, pr, p);
-      tfn_volume.push_back(clamp(a, 0.f, 1.f) * 255.f);
+      tfn_volume[4 * i + 3] = clamp(a, 0.f, 1.f) * 255.f;
     }
   }
   // interpolate opaque palette
-  for (int j = tfn_w - 1; j >= 0 ; --j) {
+# pragma omp parallel for collapse(2)
+  for (int j = 0; j < tfn_w; ++j) {
     for (int i = 0; i < tfn_h; ++i) {
       const float& r = tfn_volume[4 * i + 0];
       const float& g = tfn_volume[4 * i + 1];
       const float& b = tfn_volume[4 * i + 2];
       const float& a = tfn_volume[4 * i + 3];
-      if (j / (float) tfn_w * 255.f > a) {
-	tfn_opaque.push_back(r);
-	tfn_opaque.push_back(g);
-	tfn_opaque.push_back(b);
-	tfn_opaque.push_back(255);
+      if ((1.f - j / (float) tfn_w) * 255.f > a) {
+	tfn_opaque[4 * (i + j * tfn_h) + 0] = r;
+	tfn_opaque[4 * (i + j * tfn_h) + 1] = g;
+	tfn_opaque[4 * (i + j * tfn_h) + 2] = b;
+	tfn_opaque[4 * (i + j * tfn_h) + 3] = 255;
       }
       else {
-      	tfn_opaque.push_back(0.5f * (255.f + r));
-      	tfn_opaque.push_back(0.5f * (255.f + g));
-      	tfn_opaque.push_back(0.5f * (255.f + b));
-      	tfn_opaque.push_back(255);
+      	tfn_opaque[4 * (i + j * tfn_h) + 0] = (0.5f * (255.f + r));
+      	tfn_opaque[4 * (i + j * tfn_h) + 1] = (0.5f * (255.f + g));
+      	tfn_opaque[4 * (i + j * tfn_h) + 2] = (0.5f * (255.f + b));
+      	tfn_opaque[4 * (i + j * tfn_h) + 3] = (255);
       }
     }
   }
@@ -124,11 +125,55 @@ static void UpdateTFN(GLuint tex_tfn_volume)
   updateTFN_custom(tex_tfn_opaque, tfn_opaque.data(), tfn_h, tfn_w);
 }
 
+static void ShowExampleAppFixedOverlay(bool open)
+{
+  //--------------------------------
+  static bool opened = false;
+  static float fps = 0.0f;
+  static int frames = 0;
+  static auto start = std::chrono::system_clock::now();
+  if (!opened) {
+    start = std::chrono::system_clock::now();
+    frames = 0;
+  }
+  std::chrono::duration<double> elapsed_seconds = std::chrono::system_clock::now() - start;
+  ++frames;
+  // dont update this too frequently
+  if (frames % 10 == 0 || frames == 1) fps = frames / elapsed_seconds.count();
+  opened = open;
+  //--------------------------------
+  const float DISTANCE = 10.0f;
+  static int corner = 0;
+  ImVec2 window_pos = ImVec2((corner & 1) ?
+			     ImGui::GetIO().DisplaySize.x - DISTANCE : DISTANCE,
+			     (corner & 2) ?
+			     ImGui::GetIO().DisplaySize.y - DISTANCE : DISTANCE);
+  ImVec2 window_pos_pivot = ImVec2((corner & 1) ? 1.0f : 0.0f, (corner & 2) ? 1.0f : 0.0f);
+  ImGui::SetNextWindowPos(window_pos, ImGuiCond_Always, window_pos_pivot);
+  // Transparent background
+  ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.0f, 0.0f, 0.0f, 0.3f));
+  if (ImGui::Begin("Information", &open,
+		   ImGuiWindowFlags_NoTitleBar|
+		   ImGuiWindowFlags_NoResize|
+		   ImGuiWindowFlags_AlwaysAutoResize|
+		   ImGuiWindowFlags_NoMove|
+		   ImGuiWindowFlags_NoSavedSettings))
+  {
+    ImGui::Text("FPS (Hz): %.f\n", fps);
+    // ImGui::Separator();
+    // ImGui::Text("Mouse Position: (%.1f,%.1f)",
+    // 		ImGui::GetIO().MousePos.x, ImGui::GetIO().MousePos.y);
+    ImGui::End();
+  }
+  ImGui::PopStyleColor();
+}
+
 void RenderGUI(GLuint tex_tfn_volume)
 {
   // initialization
   ImGui_ImplGlfwGL3_NewFrame();
   // render GUI
+  ShowExampleAppFixedOverlay(true);
   if (ImGui::Begin("1D Transfer Function"))
   {
     // data process
@@ -181,9 +226,9 @@ void RenderGUI(GLuint tex_tfn_volume)
       ImGui::InvisibleButton("tfn_palette", ImVec2(width,height));
       if (ImGui::IsItemClicked(1))
       {
-	const float x = ImGui::GetMousePos().x - canvas_x - margin - ImGui::GetScrollX();
-	const float y = ImGui::GetMousePos().y - canvas_y + margin - ImGui::GetScrollY();
-	printf("clicked background %f, %f\n", x, y);
+	const float x =  (ImGui::GetMousePos().x - canvas_x - margin - ImGui::GetScrollX());
+	const float y = -(ImGui::GetMousePos().y - canvas_y + margin - ImGui::GetScrollY());
+	printf("clicked background %f, %f\n", x/width, y/height);
       }	      
       ImGui::SetCursorScreenPos(ImVec2(canvas_x, canvas_y));
     }
