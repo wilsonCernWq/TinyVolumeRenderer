@@ -19,8 +19,10 @@ struct Camera {
   glm::vec3 focus = glm::vec3(0.f);
   glm::vec3 up    = glm::vec3(0.f,1.f,0.f);
   glm::mat4 view, proj;
-  glm::mat4 mv, mvp; // cache
   Trackball ball;
+  // cache variable
+  glm::mat4 mv, mvp; // cache
+  glm::vec3 campos;
   Camera() { CameraUpdateView(); CameraUpdateProj(width, height); }
 };
 static Camera camera;
@@ -40,10 +42,10 @@ size_t CameraHeight() { return camera.height; }
 float  CameraZNear() { return camera.zNear; }
 float  CameraZFar()  { return camera.zFar; }
 const float* CameraPos() {
-  glm::vec3 pos =
+  camera.campos =
     glm::vec3(camera.ball.Matrix() * glm::vec4(camera.eye - camera.focus, 0.f)) +
     camera.focus; 
-  return glm::value_ptr(pos);
+  return glm::value_ptr(camera.campos);
 }
 
 void CameraBeginZoom(float x, float y) 
