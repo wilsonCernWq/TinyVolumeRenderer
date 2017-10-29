@@ -182,7 +182,12 @@ static void ShowFixedInfoOverlay(bool open)
 
 static void ShowTFNWidget(bool open, GLuint tex_tfn_volume)
 {
-  if (!ImGui::Begin("1D Transfer Function", &open)) { ImGui::End(); return; }  
+  if (!ImGui::Begin("Transfer Function Widget", &open)) { ImGui::End(); return; }
+  ImGui::Text("1D Transfer Function");
+  // radio paremeters
+  static bool delete_point = 0;
+  ImGui::Separator();
+  ImGui::Checkbox("Delete Point", &delete_point);
   // draw stuffs
   ImDrawList *draw_list = ImGui::GetWindowDrawList();
   const float mouse_x = ImGui::GetMousePos().x;
@@ -226,13 +231,22 @@ static void ShowTFNWidget(bool open, GLuint tex_tfn_volume)
       // dark highlight
       draw_list->AddCircleFilled(ImVec2(pos.x, pos.y + 0.5f * len), 0.5f*len,
       			       ImGui::IsItemHovered() ? 0xFF051C33 : 0xFFBCBCBC);
+      // setup interactions
+      if (ImGui::IsItemClicked(1)) {
+	if (delete_point) {
+	  if (i > 0 && i < tfn_c.size()-1) {
+	    tfn_c.erase(tfn_c.begin() + i);
+	    tex_tfn_changed = true;
+	  }
+	}
+      }
       if (ImGui::IsItemActive())
       {
-      	ImVec2 delta = ImGui::GetIO().MouseDelta;	  
-      	if (i > 0 && i < tfn_c.size()-1) {
-      	  tfn_c[i].p += delta.x/width;
-      	  tfn_c[i].p = clamp(tfn_c[i].p, tfn_c[i-1].p, tfn_c[i+1].p);
-      	}
+	ImVec2 delta = ImGui::GetIO().MouseDelta;	  
+	if (i > 0 && i < tfn_c.size()-1) {
+	  tfn_c[i].p += delta.x/width;
+	  tfn_c[i].p = clamp(tfn_c[i].p, tfn_c[i-1].p, tfn_c[i+1].p);
+	}	
       	tex_tfn_changed = true;
       }
       // draw picker
@@ -256,7 +270,7 @@ static void ShowTFNWidget(bool open, GLuint tex_tfn_volume)
     // draw background interaction
     ImGui::SetCursorScreenPos(ImVec2(canvas_x + margin, canvas_y - margin));
     ImGui::InvisibleButton("tfn_palette", ImVec2(width, 2.5 * len));
-    if (ImGui::IsItemClicked(1))
+    if (ImGui::IsItemClicked(1) && !delete_point)
     {
       const float p = clamp((mouse_x - canvas_x - margin - scroll_x) / (float) width,
 			    0.f, 1.f);
@@ -294,6 +308,15 @@ static void ShowTFNWidget(bool open, GLuint tex_tfn_volume)
       // highlight
       draw_list->AddCircleFilled(pos, 0.6f * radius,
 				 ImGui::IsItemHovered() ? 0xFF051c33 : 0xFFD8D8D8);
+      // setup interaction
+      if (ImGui::IsItemClicked(1)) {
+	if (delete_point) {
+	  if (i > 0 && i < tfn_o.size()-1) {
+	    tfn_o.erase(tfn_o.begin() + i);
+	    tex_tfn_changed = true;
+	  }
+	}
+      }
       if (ImGui::IsItemActive())
       {
 	ImVec2 delta = ImGui::GetIO().MouseDelta;	  
@@ -309,7 +332,7 @@ static void ShowTFNWidget(bool open, GLuint tex_tfn_volume)
     // draw background interaction
     ImGui::SetCursorScreenPos(ImVec2(canvas_x + margin, canvas_y - height - margin));
     ImGui::InvisibleButton("tfn_palette", ImVec2(width,height));
-    if (ImGui::IsItemClicked(1))
+    if (ImGui::IsItemClicked(1) && !delete_point)
     {
       const float x = clamp((mouse_x - canvas_x - margin - scroll_x) / (float) width,
 			    0.f, 1.f);
