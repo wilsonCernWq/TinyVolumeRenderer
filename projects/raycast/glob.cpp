@@ -21,10 +21,10 @@ struct ColorPoint {
   float p;
   float r, g, b;
   unsigned long GetHex() {
-    return
-      ((static_cast<int>(r) & 0xff) << 16) +
-      ((static_cast<int>(g) & 0xff) << 8) +
-      ((static_cast<int>(b) & 0xff));
+    return (0xff << 24) +
+      ((static_cast<unsigned char>(b) & 0xff) << 16) +
+      ((static_cast<unsigned char>(g) & 0xff) << 8) +
+      ((static_cast<unsigned char>(r) & 0xff));
   }
 };
 struct OpacityPoint {
@@ -34,7 +34,8 @@ struct OpacityPoint {
 static std::vector<ColorPoint>   tfn_c =
 {
   {0.0f, 0,   0,   255},
-  {0.5f, 0,   255, 0  },
+  {0.3f, 0,   255, 255},
+  {0.6f, 255, 255, 0  },
   {1.0f, 255, 0,   0  }
 };
 static std::vector<OpacityPoint> tfn_o =
@@ -84,7 +85,7 @@ static void UpdateTFN(GLuint tex_tfn_volume)
   std::vector<GLubyte> tfn_volume(tfn_h * 4);
   std::vector<GLubyte> tfn_opaque(tfn_w * tfn_h * 4);
   // interpolate volume texture
-//#pragma omp parallel for
+# pragma omp parallel for
   for (int i = 0; i < tfn_h; ++i)
   {
     const float p = clamp(i / (float)(tfn_h-1), 0.0f, 1.0f);
@@ -137,7 +138,7 @@ static void UpdateTFN(GLuint tex_tfn_volume)
   updateTFN_custom(tex_tfn_opaque, tfn_opaque.data(), tfn_h, tfn_w);
 }
 
-static void ShowExampleAppFixedOverlay(bool open)
+static void ShowFixedInfoOverlay(bool open)
 {
   //--------------------------------
   static bool opened = false;
@@ -179,82 +180,143 @@ static void ShowExampleAppFixedOverlay(bool open)
   ImGui::PopStyleColor();
 }
 
+static void ShowTFNWidget(bool open, GLuint tex_tfn_volume)
+{
+  if (!ImGui::Begin("1D Transfer Function", &open)) { ImGui::End(); return; }  
+  // draw stuffs
+  ImDrawList *draw_list = ImGui::GetWindowDrawList();
+  const float mouse_x = ImGui::GetMousePos().x;
+  const float mouse_y = ImGui::GetMousePos().y;
+  const float scroll_x = ImGui::GetScrollX();
+  const float scroll_y = ImGui::GetScrollY();
+  float canvas_x = ImGui::GetCursorScreenPos().x;
+  float canvas_y = ImGui::GetCursorScreenPos().y;
+  float canvas_avail_x = ImGui::GetContentRegionAvail().x;
+  float canvas_avail_y = ImGui::GetContentRegionAvail().y;    
+  const float margin = 10.f;
+  const float width  = canvas_avail_x - 2.f * margin;
+  const float height = 60.f;
+  // draw preview texture
+  ImGui::SetCursorScreenPos(ImVec2(canvas_x + margin, canvas_y));
+  ImGui::Image(reinterpret_cast<void*>(tex_tfn_opaque), ImVec2(width, height));
+  canvas_y       += height + margin;
+  canvas_avail_y -= height + margin;
+  // draw color control points
+  {
+    ImGui::SetCursorScreenPos(ImVec2(canvas_x, canvas_y));
+    // draw circles
+    for (int i = 0; i < tfn_c.size(); ++i)
+    {
+      const float len = 9.f;
+      const ImVec2 pos(canvas_x + width * tfn_c[i].p + margin, canvas_y);
+      ImGui::SetCursorScreenPos(ImVec2(pos.x - len, pos.y));
+      ImGui::InvisibleButton(("square-"+std::to_string(i)).c_str(),
+			     ImVec2(2.f * len, 2.f * len));
+      ImGui::SetCursorScreenPos(ImVec2(canvas_x, canvas_y));
+      // white background
+      draw_list->AddTriangleFilled(ImVec2(pos.x - 0.5f * len, pos.y),
+				   ImVec2(pos.x + 0.5f * len, pos.y),
+				   ImVec2(pos.x, pos.y - len),
+				   0xFFD8D8D8);
+      draw_list->AddCircleFilled(ImVec2(pos.x, pos.y + 0.5f * len), len, 0xFFD8D8D8);
+      // dark highlight
+      draw_list->AddCircleFilled(ImVec2(pos.x, pos.y + 0.5f * len), 0.5f*len,
+      			       ImGui::IsItemHovered() ? 0xFF051C33 : 0xFFBCBCBC);
+      if (ImGui::IsItemActive())
+      {
+      	ImVec2 delta = ImGui::GetIO().MouseDelta;	  
+      	if (i > 0 && i < tfn_c.size()-1) {
+      	  tfn_c[i].p += delta.x/width;
+      	  tfn_c[i].p = clamp(tfn_c[i].p, tfn_c[i-1].p, tfn_c[i+1].p);
+      	}
+      	tex_tfn_changed = true;
+      }
+      // draw picker
+      ImGui::SetCursorScreenPos(ImVec2(pos.x - len, pos.y + 1.5f * len));
+      ImVec4 picked_color = ImColor((int)tfn_c[i].r, (int)tfn_c[i].g, (int)tfn_c[i].b, 255);
+      if (ImGui::ColorEdit4(("ColorPicker"+std::to_string(i)).c_str(),
+			    (float*)&picked_color,
+			    //ImGuiColorEditFlags_NoAlpha |
+			    ImGuiColorEditFlags_NoInputs |
+			    ImGuiColorEditFlags_NoLabel |
+			    ImGuiColorEditFlags_AlphaPreview |
+			    ImGuiColorEditFlags_NoOptions))
+      {
+	tfn_c[i].r = picked_color.x * 255.f;
+	tfn_c[i].g = picked_color.y * 255.f;
+	tfn_c[i].b = picked_color.z * 255.f;
+	tex_tfn_changed = true;
+      }
+      ImGui::SetCursorScreenPos(ImVec2(canvas_x, canvas_y));
+
+    }
+    ImGui::SetCursorScreenPos(ImVec2(canvas_x, canvas_y));
+  }    
+  // draw opacity control points
+  {
+    ImGui::SetCursorScreenPos(ImVec2(canvas_x, canvas_y));
+    // draw circles
+    for (int i = 0; i < tfn_o.size(); ++i)
+    {
+      const float radius = 7.f;
+      const ImVec2 pos(canvas_x + width  * tfn_o[i].p + margin,
+		       canvas_y - height * tfn_o[i].a - margin);		
+      ImGui::SetCursorScreenPos(ImVec2(pos.x - radius, pos.y - radius));
+      ImGui::InvisibleButton(("button-"+std::to_string(i)).c_str(),
+			     ImVec2(2.f * radius, 2.f * radius));
+      ImGui::SetCursorScreenPos(ImVec2(canvas_x, canvas_y));
+      // dark bounding box
+      draw_list->AddCircleFilled(pos,        radius, 0xFF565656);
+      // white background
+      draw_list->AddCircleFilled(pos, 0.8f * radius, 0xFFD8D8D8);
+      // highlight
+      draw_list->AddCircleFilled(pos, 0.6f * radius,
+				 ImGui::IsItemHovered() ? 0xFF051c33 : 0xFFD8D8D8);
+      if (ImGui::IsItemActive())
+      {
+	ImVec2 delta = ImGui::GetIO().MouseDelta;	  
+	tfn_o[i].a -= delta.y/height;
+	tfn_o[i].a = clamp(tfn_o[i].a, 0.0f, 1.0f);
+	if (i > 0 && i < tfn_o.size()-1) {
+	  tfn_o[i].p += delta.x/width;
+	  tfn_o[i].p = clamp(tfn_o[i].p, tfn_o[i-1].p, tfn_o[i+1].p);
+	}
+	tex_tfn_changed = true;
+      }
+    }
+    // draw background interaction
+    ImGui::SetCursorScreenPos(ImVec2(canvas_x + margin, canvas_y - height - margin));
+    ImGui::InvisibleButton("tfn_palette", ImVec2(width,height));
+    if (ImGui::IsItemClicked(1))
+    {
+      float x =  (mouse_x - canvas_x - margin - scroll_x) / (float) width;
+      float y = -(mouse_y - canvas_y + margin - scroll_y) / (float) height;
+      x = clamp(x, 0.f, 1.f);
+      y = clamp(y, 0.f, 1.f);
+      const int idx = find_idx(tfn_o, x);
+      tfn_o.insert(tfn_o.begin()+idx, {x, y});
+      tex_tfn_changed = true;
+      printf("clicked background %i, %f, %f\n", idx, x, y);
+    }	      
+    ImGui::SetCursorScreenPos(ImVec2(canvas_x, canvas_y));
+  }
+  ImGui::End();
+}
+  
 void RenderGUI(GLuint tex_tfn_volume)
 {
+  // Update TFN
+  if (tex_tfn_changed) {
+    UpdateTFN(tex_tfn_volume);
+    tex_tfn_changed = false;
+  }  
   // initialization
   ImGui_ImplGlfwGL3_NewFrame();
   // render GUI
-  ShowExampleAppFixedOverlay(true);
-  if (ImGui::Begin("1D Transfer Function"))
-  {
-    // data process
-    if (tex_tfn_changed) {
-      UpdateTFN(tex_tfn_volume);
-      tex_tfn_changed = false;
-    }
-    // draw
-    ImGui::Text("1D Transfer Function");
-    const float mouse_x = ImGui::GetMousePos().x;
-    const float mouse_y = ImGui::GetMousePos().y;
-    const float scroll_x = ImGui::GetScrollX();
-    const float scroll_y = ImGui::GetScrollY();
-    float canvas_x = ImGui::GetCursorScreenPos().x;
-    float canvas_y = ImGui::GetCursorScreenPos().y;
-    float canvas_avail_x = ImGui::GetContentRegionAvail().x;
-    float canvas_avail_y = ImGui::GetContentRegionAvail().y;
-    {
-      const float margin = 10.f;
-      const float width  = canvas_avail_x - 2.f * margin;
-      const float height = 60.f;
-      // draw preview texture
-      ImGui::SetCursorScreenPos(ImVec2(canvas_x + margin, canvas_y));
-      ImGui::Image(reinterpret_cast<void*>(tex_tfn_opaque), ImVec2(width, height));
-      canvas_y       += height + margin;
-      canvas_avail_y -= height + margin;
-      // draw control points
-      ImDrawList *draw_list = ImGui::GetWindowDrawList();
-      for (int i = 0; i < tfn_o.size(); ++i)
-      {
-	const ImVec2 pos(canvas_x + width  * tfn_o[i].p + margin,
-			 canvas_y - height * tfn_o[i].a - margin);		
-	ImGui::SetCursorScreenPos(ImVec2(pos.x - 7, pos.y- 7));
-	ImGui::InvisibleButton(("button-"+std::to_string(i)).c_str(), ImVec2(14,14));
-	ImGui::SetCursorScreenPos(ImVec2(canvas_x, canvas_y));
-	draw_list->AddCircleFilled(pos, 7, 0xFF565656);
-	draw_list->AddCircleFilled(pos, 6, 0xFFD8D8D8);
-	draw_list->AddCircleFilled(pos, 4, ImGui::IsItemHovered() ?
-				   0xFF051c33 : 0xFFD8D8D8);
-	if (ImGui::IsItemActive())
-	{
-	  ImVec2 delta = ImGui::GetIO().MouseDelta;	  
-	  tfn_o[i].a -= delta.y/height;
-	  tfn_o[i].a = clamp(tfn_o[i].a, 0.0f, 1.0f);
-	  if (i > 0 && i < tfn_o.size()-1) {
-	    tfn_o[i].p += delta.x/width;
-	    tfn_o[i].p = clamp(tfn_o[i].p, tfn_o[i-1].p, tfn_o[i+1].p);
-	  }
-	  tex_tfn_changed = true;
-	}
-      }
-      // draw background
-      ImGui::SetCursorScreenPos(ImVec2(canvas_x + margin, canvas_y - height - margin));
-      ImGui::InvisibleButton("tfn_palette", ImVec2(width,height));
-      if (ImGui::IsItemClicked(1))
-      {
-	float x =  (mouse_x - canvas_x - margin - scroll_x) / (float) width;
-	float y = -(mouse_y - canvas_y + margin - scroll_y) / (float) height;
-	x = clamp(x, 0.f, 1.f);
-	y = clamp(y, 0.f, 1.f);
-	const int idx = find_idx(tfn_o, x);
-	tfn_o.insert(tfn_o.begin()+idx, {x, y});
-	tex_tfn_changed = true;
-	printf("clicked background %i, %f, %f\n", idx, x, y);
-      }	      
-      ImGui::SetCursorScreenPos(ImVec2(canvas_x, canvas_y));
-    }
-  }
-  ImGui::End();
-  ImGui::Render();    
+  // ImGui::ShowTestWindow();
+  ShowFixedInfoOverlay(true);
+  ShowTFNWidget(true, tex_tfn_volume);  
+  ImGui::Render();
 }
 
 //---------------------------------------------------------------------------------------
