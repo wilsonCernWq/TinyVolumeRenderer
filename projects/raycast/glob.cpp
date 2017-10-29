@@ -165,7 +165,7 @@ static void ShowFixedInfoOverlay(bool open)
   ImGui::SetNextWindowPos(window_pos, ImGuiCond_Always, window_pos_pivot);
   // Transparent background
   ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.0f, 0.0f, 0.0f, 0.3f));
-  if (ImGui::Begin("Information", &open,
+  if (ImGui::Begin("Information", NULL,
 		   ImGuiWindowFlags_NoTitleBar|
 		   ImGuiWindowFlags_NoResize|
 		   ImGuiWindowFlags_AlwaysAutoResize|
@@ -180,9 +180,9 @@ static void ShowFixedInfoOverlay(bool open)
   ImGui::PopStyleColor();
 }
 
-static void ShowTFNWidget(bool open, GLuint tex_tfn_volume)
+static void ShowTFNWidget(GLuint tex_tfn_volume)
 {
-  if (!ImGui::Begin("Transfer Function Widget", &open)) { ImGui::End(); return; }
+  if (!ImGui::Begin("Transfer Function Widget")) { ImGui::End(); return; }
   ImGui::Text("1D Transfer Function");
   // radio paremeters
   static bool delete_point = 0;
@@ -201,6 +201,8 @@ static void ShowTFNWidget(bool open, GLuint tex_tfn_volume)
   const float margin = 10.f;
   const float width  = canvas_avail_x - 2.f * margin;
   const float height = 60.f;
+  const float color_len = 9.f;
+  const float opacity_len = 7.f;
   // draw preview texture
   ImGui::SetCursorScreenPos(ImVec2(canvas_x + margin, canvas_y));
   ImGui::Image(reinterpret_cast<void*>(tex_tfn_opaque), ImVec2(width, height));
@@ -208,28 +210,27 @@ static void ShowTFNWidget(bool open, GLuint tex_tfn_volume)
   canvas_avail_y -= height + margin;
   // draw color control points
   {
-    const float len = 9.f;
     ImGui::SetCursorScreenPos(ImVec2(canvas_x, canvas_y));
     // draw circle background
     draw_list->AddRectFilled(ImVec2(canvas_x + margin, canvas_y - margin),
 			     ImVec2(canvas_x + margin + width,
-				    canvas_y - margin + 2.5 * len), 0xFF474646);    
+				    canvas_y - margin + 2.5 * color_len), 0xFF474646);    
     // draw circles
     for (int i = 0; i < tfn_c.size(); ++i)
     {
       const ImVec2 pos(canvas_x + width * tfn_c[i].p + margin, canvas_y);
-      ImGui::SetCursorScreenPos(ImVec2(pos.x - len, pos.y));
+      ImGui::SetCursorScreenPos(ImVec2(pos.x - color_len, pos.y));
       ImGui::InvisibleButton(("square-"+std::to_string(i)).c_str(),
-			     ImVec2(2.f * len, 2.f * len));
+			     ImVec2(2.f * color_len, 2.f * color_len));
       ImGui::SetCursorScreenPos(ImVec2(canvas_x, canvas_y));
       // white background
-      draw_list->AddTriangleFilled(ImVec2(pos.x - 0.5f * len, pos.y),
-				   ImVec2(pos.x + 0.5f * len, pos.y),
-				   ImVec2(pos.x, pos.y - len),
+      draw_list->AddTriangleFilled(ImVec2(pos.x - 0.5f * color_len, pos.y),
+				   ImVec2(pos.x + 0.5f * color_len, pos.y),
+				   ImVec2(pos.x, pos.y - color_len),
 				   0xFFD8D8D8);
-      draw_list->AddCircleFilled(ImVec2(pos.x, pos.y + 0.5f * len), len, 0xFFD8D8D8);
+      draw_list->AddCircleFilled(ImVec2(pos.x, pos.y + 0.5f * color_len), color_len, 0xFFD8D8D8);
       // dark highlight
-      draw_list->AddCircleFilled(ImVec2(pos.x, pos.y + 0.5f * len), 0.5f*len,
+      draw_list->AddCircleFilled(ImVec2(pos.x, pos.y + 0.5f * color_len), 0.5f*color_len,
       			       ImGui::IsItemHovered() ? 0xFF051C33 : 0xFFBCBCBC);
       // setup interactions
       if (ImGui::IsItemClicked(1)) {
@@ -250,7 +251,7 @@ static void ShowTFNWidget(bool open, GLuint tex_tfn_volume)
       	tex_tfn_changed = true;
       }
       // draw picker
-      ImGui::SetCursorScreenPos(ImVec2(pos.x - len, pos.y + 1.5f * len));
+      ImGui::SetCursorScreenPos(ImVec2(pos.x - color_len, pos.y + 1.5f * color_len));
       ImVec4 picked_color = ImColor((int)tfn_c[i].r, (int)tfn_c[i].g, (int)tfn_c[i].b, 255);
       if (ImGui::ColorEdit4(("ColorPicker"+std::to_string(i)).c_str(),
 			    (float*)&picked_color,
@@ -267,26 +268,6 @@ static void ShowTFNWidget(bool open, GLuint tex_tfn_volume)
       }
       ImGui::SetCursorScreenPos(ImVec2(canvas_x, canvas_y));
     }
-    // draw background interaction
-    ImGui::SetCursorScreenPos(ImVec2(canvas_x + margin, canvas_y - margin));
-    ImGui::InvisibleButton("tfn_palette", ImVec2(width, 2.5 * len));
-    if (ImGui::IsItemClicked(1) && !delete_point)
-    {
-      const float p = clamp((mouse_x - canvas_x - margin - scroll_x) / (float) width,
-			    0.f, 1.f);
-      const int ir = find_idx(tfn_c, p);
-      const int il = ir - 1;
-      const float pr = tfn_c[ir].p;
-      const float pl = tfn_c[il].p;
-      const float r = lerp(tfn_c[il].r, tfn_c[ir].r, pl, pr, p);
-      const float g = lerp(tfn_c[il].g, tfn_c[ir].g, pl, pr, p);
-      const float b = lerp(tfn_c[il].b, tfn_c[ir].b, pl, pr, p);
-      tfn_c.insert(tfn_c.begin() + ir, {p, r, g, b});      
-      tex_tfn_changed = true;
-      printf("[GUI] add opacity point at %f with value = (%f, %f, %f)\n", p, r, g, b);
-    }	      
-    ImGui::SetCursorScreenPos(ImVec2(canvas_x, canvas_y));
-
   }    
   // draw opacity control points
   {
@@ -294,19 +275,18 @@ static void ShowTFNWidget(bool open, GLuint tex_tfn_volume)
     // draw circles
     for (int i = 0; i < tfn_o.size(); ++i)
     {
-      const float radius = 7.f;
       const ImVec2 pos(canvas_x + width  * tfn_o[i].p + margin,
 		       canvas_y - height * tfn_o[i].a - margin);		
-      ImGui::SetCursorScreenPos(ImVec2(pos.x - radius, pos.y - radius));
+      ImGui::SetCursorScreenPos(ImVec2(pos.x - opacity_len, pos.y - opacity_len));
       ImGui::InvisibleButton(("button-"+std::to_string(i)).c_str(),
-			     ImVec2(2.f * radius, 2.f * radius));
+			     ImVec2(2.f * opacity_len, 2.f * opacity_len));
       ImGui::SetCursorScreenPos(ImVec2(canvas_x, canvas_y));
       // dark bounding box
-      draw_list->AddCircleFilled(pos,        radius, 0xFF565656);
+      draw_list->AddCircleFilled(pos,        opacity_len, 0xFF565656);
       // white background
-      draw_list->AddCircleFilled(pos, 0.8f * radius, 0xFFD8D8D8);
+      draw_list->AddCircleFilled(pos, 0.8f * opacity_len, 0xFFD8D8D8);
       // highlight
-      draw_list->AddCircleFilled(pos, 0.6f * radius,
+      draw_list->AddCircleFilled(pos, 0.6f * opacity_len,
 				 ImGui::IsItemHovered() ? 0xFF051c33 : 0xFFD8D8D8);
       // setup interaction
       if (ImGui::IsItemClicked(1)) {
@@ -329,22 +309,41 @@ static void ShowTFNWidget(bool open, GLuint tex_tfn_volume)
 	tex_tfn_changed = true;
       }
     }
-    // draw background interaction
-    ImGui::SetCursorScreenPos(ImVec2(canvas_x + margin, canvas_y - height - margin));
-    ImGui::InvisibleButton("tfn_palette", ImVec2(width,height));
-    if (ImGui::IsItemClicked(1) && !delete_point)
-    {
-      const float x = clamp((mouse_x - canvas_x - margin - scroll_x) / (float) width,
-			    0.f, 1.f);
-      const float y = clamp(-(mouse_y - canvas_y + margin - scroll_y) / (float) height,
-			    0.f, 1.f);
-      const int idx = find_idx(tfn_o, x);
-      tfn_o.insert(tfn_o.begin()+idx, {x, y});
-      tex_tfn_changed = true;
-      printf("[GUI] add opacity point at %f with value = %f\n", x, y);
-    }	      
-    ImGui::SetCursorScreenPos(ImVec2(canvas_x, canvas_y));
   }
+  // draw background interaction
+  ImGui::SetCursorScreenPos(ImVec2(canvas_x + margin, canvas_y - margin));
+  ImGui::InvisibleButton("tfn_palette", ImVec2(width, 2.5 * color_len));
+  if (ImGui::IsItemClicked(1) && !delete_point)
+  {
+    const float p = clamp((mouse_x - canvas_x - margin - scroll_x) / (float) width,
+			  0.f, 1.f);
+    const int ir = find_idx(tfn_c, p);
+    const int il = ir - 1;
+    const float pr = tfn_c[ir].p;
+    const float pl = tfn_c[il].p;
+    const float r = lerp(tfn_c[il].r, tfn_c[ir].r, pl, pr, p);
+    const float g = lerp(tfn_c[il].g, tfn_c[ir].g, pl, pr, p);
+    const float b = lerp(tfn_c[il].b, tfn_c[ir].b, pl, pr, p);
+    tfn_c.insert(tfn_c.begin() + ir, {p, r, g, b});      
+    tex_tfn_changed = true;
+    printf("[GUI] add opacity point at %f with value = (%f, %f, %f)\n", p, r, g, b);
+  }	      
+  ImGui::SetCursorScreenPos(ImVec2(canvas_x, canvas_y));
+  // draw background interaction
+  ImGui::SetCursorScreenPos(ImVec2(canvas_x + margin, canvas_y - height - margin));
+  ImGui::InvisibleButton("tfn_palette", ImVec2(width,height));
+  if (ImGui::IsItemClicked(1) && !delete_point)
+  {
+    const float x = clamp((mouse_x - canvas_x - margin - scroll_x) / (float) width,
+			  0.f, 1.f);
+    const float y = clamp(-(mouse_y - canvas_y + margin - scroll_y) / (float) height,
+			  0.f, 1.f);
+    const int idx = find_idx(tfn_o, x);
+    tfn_o.insert(tfn_o.begin()+idx, {x, y});
+    tex_tfn_changed = true;
+    printf("[GUI] add opacity point at %f with value = %f\n", x, y);
+  }	      
+  ImGui::SetCursorScreenPos(ImVec2(canvas_x, canvas_y));
   ImGui::End();
 }
   
@@ -359,7 +358,7 @@ void RenderGUI(GLuint tex_tfn_volume)
   ImGui_ImplGlfwGL3_NewFrame();
   // render GUI
   ShowFixedInfoOverlay(true);
-  ShowTFNWidget(true, tex_tfn_volume);  
+  ShowTFNWidget(tex_tfn_volume);  
   ImGui::Render();
 }
 
