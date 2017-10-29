@@ -203,11 +203,15 @@ static void ShowTFNWidget(bool open, GLuint tex_tfn_volume)
   canvas_avail_y -= height + margin;
   // draw color control points
   {
+    const float len = 9.f;
     ImGui::SetCursorScreenPos(ImVec2(canvas_x, canvas_y));
+    // draw circle background
+    draw_list->AddRectFilled(ImVec2(canvas_x + margin, canvas_y - margin),
+			     ImVec2(canvas_x + margin + width,
+				    canvas_y - margin + 2.5 * len), 0xFF474646);    
     // draw circles
     for (int i = 0; i < tfn_c.size(); ++i)
     {
-      const float len = 9.f;
       const ImVec2 pos(canvas_x + width * tfn_c[i].p + margin, canvas_y);
       ImGui::SetCursorScreenPos(ImVec2(pos.x - len, pos.y));
       ImGui::InvisibleButton(("square-"+std::to_string(i)).c_str(),
@@ -236,7 +240,7 @@ static void ShowTFNWidget(bool open, GLuint tex_tfn_volume)
       ImVec4 picked_color = ImColor((int)tfn_c[i].r, (int)tfn_c[i].g, (int)tfn_c[i].b, 255);
       if (ImGui::ColorEdit4(("ColorPicker"+std::to_string(i)).c_str(),
 			    (float*)&picked_color,
-			    //ImGuiColorEditFlags_NoAlpha |
+			    ImGuiColorEditFlags_NoAlpha |
 			    ImGuiColorEditFlags_NoInputs |
 			    ImGuiColorEditFlags_NoLabel |
 			    ImGuiColorEditFlags_AlphaPreview |
@@ -248,9 +252,27 @@ static void ShowTFNWidget(bool open, GLuint tex_tfn_volume)
 	tex_tfn_changed = true;
       }
       ImGui::SetCursorScreenPos(ImVec2(canvas_x, canvas_y));
-
     }
+    // draw background interaction
+    ImGui::SetCursorScreenPos(ImVec2(canvas_x + margin, canvas_y - margin));
+    ImGui::InvisibleButton("tfn_palette", ImVec2(width, 2.5 * len));
+    if (ImGui::IsItemClicked(1))
+    {
+      const float p = clamp((mouse_x - canvas_x - margin - scroll_x) / (float) width,
+			    0.f, 1.f);
+      const int ir = find_idx(tfn_c, p);
+      const int il = ir - 1;
+      const float pr = tfn_c[ir].p;
+      const float pl = tfn_c[il].p;
+      const float r = lerp(tfn_c[il].r, tfn_c[ir].r, pl, pr, p);
+      const float g = lerp(tfn_c[il].g, tfn_c[ir].g, pl, pr, p);
+      const float b = lerp(tfn_c[il].b, tfn_c[ir].b, pl, pr, p);
+      tfn_c.insert(tfn_c.begin() + ir, {p, r, g, b});      
+      tex_tfn_changed = true;
+      printf("[GUI] add opacity point at %f with value = (%f, %f, %f)\n", p, r, g, b);
+    }	      
     ImGui::SetCursorScreenPos(ImVec2(canvas_x, canvas_y));
+
   }    
   // draw opacity control points
   {
@@ -289,14 +311,14 @@ static void ShowTFNWidget(bool open, GLuint tex_tfn_volume)
     ImGui::InvisibleButton("tfn_palette", ImVec2(width,height));
     if (ImGui::IsItemClicked(1))
     {
-      float x =  (mouse_x - canvas_x - margin - scroll_x) / (float) width;
-      float y = -(mouse_y - canvas_y + margin - scroll_y) / (float) height;
-      x = clamp(x, 0.f, 1.f);
-      y = clamp(y, 0.f, 1.f);
+      const float x = clamp((mouse_x - canvas_x - margin - scroll_x) / (float) width,
+			    0.f, 1.f);
+      const float y = clamp(-(mouse_y - canvas_y + margin - scroll_y) / (float) height,
+			    0.f, 1.f);
       const int idx = find_idx(tfn_o, x);
       tfn_o.insert(tfn_o.begin()+idx, {x, y});
       tex_tfn_changed = true;
-      printf("clicked background %i, %f, %f\n", idx, x, y);
+      printf("[GUI] add opacity point at %f with value = %f\n", x, y);
     }	      
     ImGui::SetCursorScreenPos(ImVec2(canvas_x, canvas_y));
   }
@@ -313,7 +335,6 @@ void RenderGUI(GLuint tex_tfn_volume)
   // initialization
   ImGui_ImplGlfwGL3_NewFrame();
   // render GUI
-  // ImGui::ShowTestWindow();
   ShowFixedInfoOverlay(true);
   ShowTFNWidget(true, tex_tfn_volume);  
   ImGui::Render();
