@@ -1,4 +1,4 @@
-# Slice Based Volume Renderer #
+# Raycasting Volume Renderer #
 
 ## How to Compile ##
 
@@ -18,7 +18,4 @@ cd build
 
 ## Rendered Images ##
 
-![alt text](assets/bonsai.png "Bonsai")
-![alt text](assets/magnetic_reconnection.png "Magnetic Reconnection")
-![alt text](assets/marmoset_neurons.png "Marmoset Neurons")
 ![alt text](assets/neghip.png "Neghip")
