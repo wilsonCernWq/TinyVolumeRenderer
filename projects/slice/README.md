@@ -23,7 +23,8 @@ will be written to the second framebuffer obejct
 
 ## What resources you used ##
 
-I wrote my program using GLFW. I implemented the algorithm based on the GPU Gem online.
+I used GLM and GLFW internally, I used their sample program to setup 3D textures in
+OpenGL. I implemented the algorithm based on the descriptions from GPU-Gem online.
 
 ## Any known bugs in your assignment ##
 
