@@ -39,7 +39,7 @@ but it cannot read [CSAFE](data/csafe_heptane.json) dataset properly for some re
 ## How to Compile ##
 
 The program requires OpenGL 4+ with 3D texture support. I don't recommend running it 
-on Mac. I have tested it on Linux (Ubuntu and CentOS 7) machines. 
+on Mac. I have tested it on Linux (Ubuntu and CentOS 7) machines. [Need a Linux ?](HELPME.md)
 
 ```
 mkdir build
