@@ -6,12 +6,12 @@ I implemented this assignment using one rendering pass.
 
 For each iteration:
 
-1. I use the bounding box of the volume as our geometry and render normally
+1. I use the bounding box of the volume as the geometry and render normally
 
-2. I pass the camera position in screen coordinate as constant into the shader
+2. I also pass the camera position in screen coordinate as a uniform constant into the shader
 
-3. In shader I calculate the ray direction and origin based on the vertex coordinate
-and the camera position.
+3. In the fragment shader I calculate the ray direction and origin based on the vertex
+coordinate and the camera position.
 
 4. I do normal ray-box intersection to find the starting and ending position.
 
