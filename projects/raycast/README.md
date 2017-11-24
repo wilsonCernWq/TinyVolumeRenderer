@@ -46,18 +46,22 @@ cd build
 ./viewer_slice ../data/neghip.json
 ```
 
+## How to control it ##
+
+Use left mouse click to rotate, use right mouse click to zoom.
+
+## how to change the transfer function ##
+
+* Left click gray dots to adjust control color/opacity points.
+
+* Right click on empty area to add new control points.
+
+* Check the 'delete point' box and right click on control points to remove them.
+
+* Left click on the colored square to change color map color.
+
 ## Rendered Images ##
 
 See assets folder
 
 ![alt text](assets/neghip.png "Neghip")
-
-## how to change the transfer function ##
-
-Left click gray dots to adjust control color/opacity points.
-
-Right click on empty area to add new control points.
-
-Check the 'delete point' box and right click on control points to remove them.
-
-left click on the colored square to change color map color.
