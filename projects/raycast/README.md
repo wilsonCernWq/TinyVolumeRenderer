@@ -43,7 +43,7 @@ make -j8
 
 ```
 cd build
-./viewer_slice ../data/neghip.json
+./viewer_raycast ../data/neghip.json -sr <sampling-rate>
 ```
 
 ## How to control it ##
