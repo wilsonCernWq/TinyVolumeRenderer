@@ -19,7 +19,6 @@ coordinate and the camera position.
 
 6. I write the output color into the screen.
 
-
 ## What resources you used ##
 
 I used GLM and GLFW internally, I used their sample program to setup 3D textures in
@@ -27,10 +26,12 @@ OpenGL. I also used the method I learned in ray-tracing class inside this assign
 
 ## Any known bugs in your assignment ##
 
-My renderer can load NEGHIP dataset correctly, but it cannot read CSAFE dataset
-for some readons.
+My renderer can load [NEGHIP](data/neghip.json) dataset correctly, 
+but it cannot read [CSAFE](data/csafe_heptane.json) dataset for some readons.
 
 ## How to Compile ##
+
+The program requires OpenGL 4+ with 3D texture support. I don't recommend running it on Mac. I have tested it on Linux (Ubuntu and CentOS 7) machines.
 
 ```
 mkdir build
@@ -48,7 +49,9 @@ cd build
 
 ## How to control it ##
 
-Use left mouse click to rotate, use right mouse click to zoom.
+Use left mouse click to rotate 
+
+Use right mouse click to zoom.
 
 ## how to change the transfer function ##
 
