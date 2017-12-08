@@ -1,4 +1,6 @@
 #pragma once
+#ifndef OSPRAY_FRAMEBUFFER_H
+#define OSPRAY_FRAMEBUFFER_H
 
 #include "common.h"
 
@@ -71,3 +73,5 @@ public:
         mapped_ptr = (uint32_t *) ospMapFrameBuffer(ospFB, OSP_FB_COLOR);
     }
 };
+
+#endif //OSPRAY_FRAMEBUFFER_H

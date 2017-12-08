@@ -1,5 +1,6 @@
 #pragma once
-
+#ifndef OSPRAY_CAMERA_H
+#define OSPRAY_CAMERA_H
 #include "common.h"
 #include "trackball.h"
 
@@ -88,3 +89,5 @@ public:
         ospCommit(ospCamera);
     }
 };
+
+#endif OSPRAY_CAMERA_H

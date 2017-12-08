@@ -1,7 +1,7 @@
 //
 // Created by qwu on 12/7/17.
 //
-
+#pragma once
 #ifndef OSPRAY_VOLUME_H
 #define OSPRAY_VOLUME_H
 

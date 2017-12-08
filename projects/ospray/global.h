@@ -1,9 +1,9 @@
 //!
 //! This file defines some global variables and all callback functions
 //!
+#pragma once
 #ifndef OSPRAY_GLOBAL_H
 #define OSPRAY_GLOBAL_H
-#pragma once
 
 #include "common.h"
 #include "camera.h"

@@ -1,9 +1,9 @@
 //
 // Created by qwu on 12/7/17.
 //
-
-#ifndef RAYTRACER_GUI_H
-#define RAYTRACER_GUI_H
+#pragma once
+#ifndef OSPRAY_WIDGET_H
+#define OSPRAY_WIDGET_H
 
 namespace tfn {
   namespace tfn_widget {
@@ -12,4 +12,4 @@ namespace tfn {
   }
 }
 
-#endif //RAYTRACER_GUI_H
+#endif //OSPRAY_WIDGET_H

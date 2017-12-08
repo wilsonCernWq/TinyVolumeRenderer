@@ -3,22 +3,6 @@
 #include "global.h"
 #include "../reader/volume_reader.hpp"
 
-void Timer(std::string str = "")
-{
-  static bool timing = false;
-  static std::chrono::system_clock::time_point t1, t2;
-  if (!timing) {
-    timing = true;
-    t1 = std::chrono::system_clock::now();
-  }
-  else {
-    t2 = std::chrono::system_clock::now();
-    std::chrono::duration<double> dur = t2 - t1;
-    std::cout << "[timer] " << str << " " << dur.count() << " seconds" << std::endl;
-    timing = false;
-  }
-}
-
 void UpdateTFN(const void *colors, const void *opacities, int colorW, int colorH, int opacityW, int opacityH)
 {
   //! setup trasnfer function

@@ -3,8 +3,8 @@
  * which is independent to the project itself.
  */
 #pragma once
-#ifndef _TRACKBALL_H_
-#define _TRACKBALL_H_
+#ifndef OSPRAY_TRACKBALL_H
+#define OSPRAY_TRACKBALL_H
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -107,4 +107,4 @@ private:
     }
 };
 
-#endif//_TRACKBALL_H_
+#endif //OSPRAY_TRACKBALL_H

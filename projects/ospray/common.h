@@ -2,8 +2,8 @@
 //! This file contains headers of all external libraries
 //!
 #pragma once
-#ifndef _COMMON_H_
-#define _COMMON_H_
+#ifndef OSPRAY_COMMON_H
+#define OSPRAY_COMMON_H
 
 #define NOMINMAX
 
@@ -16,16 +16,13 @@
 //
 // include cpp standard library
 //
-#include <iostream>
-#include <string>
 #include <cmath>
-#include <ratio>
-#include <limits>
+#include <string>
+#include <iostream>
 #include <chrono>
 #include <vector>     // c++11
 #include <algorithm>  // c++11
 #include <functional> // c++11
-#include <thread>
 
 //
 // threading
@@ -104,4 +101,20 @@ inline void writePPM
     fclose(file);
 }
 
-#endif//_COMMON_H_
+// Timer
+inline void Timer(std::string str = "")
+{
+  static bool timing = false;
+  static std::chrono::system_clock::time_point t1, t2;
+  if (!timing) {
+    timing = true;
+    t1 = std::chrono::system_clock::now();
+  }
+  else {
+    t2 = std::chrono::system_clock::now();
+    std::chrono::duration<double> dur = t2 - t1;
+    std::cout << "[timer] " << str << " " << dur.count() << " seconds" << std::endl;
+    timing = false;
+  }
+}
+#endif //OSPRAY_COMMON_H
