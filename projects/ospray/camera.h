@@ -90,4 +90,4 @@ public:
     }
 };
 
-#endif OSPRAY_CAMERA_H
+#endif //OSPRAY_CAMERA_H
