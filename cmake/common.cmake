@@ -148,6 +148,18 @@ ENDIF()
 #
 #----------------------------------------------------------------------------
 #
+#--- TBB
+#
+FIND_PACKAGE(TBB)
+IF (TBB_FOUND)
+  INCLUDE_DIRECTORIES(${TBB_INCLUDE_DIR})
+  LIST(APPEND COMMON_LIBS ${TBB_LIBRARY})
+  IF (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
+  ENDIF ()
+  ADD_DEFINITIONS(-DUSE_TBB)
+ENDIF ()
+#
 #--- OpenMP
 #
 FIND_PACKAGE(OpenMP)

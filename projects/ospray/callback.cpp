@@ -16,8 +16,9 @@
 # include "widgets/TransferFunctionWidget.h"
 #endif
 
+#ifdef USE_TFN_MODULE
 static std::shared_ptr<tfn::tfn_widget::TransferFunctionWidget> tfnWidget;
-
+#endif
 //! functions
 void Clean()
 {
@@ -82,8 +83,10 @@ void render()
   // Draw GUI
   {
     ImGui_ImplGlfwGL3_NewFrame();
+#ifdef USE_TFN_MODULE
     tfnWidget->drawUi();
     tfnWidget->render();
+#endif
     tfn2d::DrawUI();
     ImGui::Render();
   }
@@ -125,6 +128,7 @@ GLFWwindow *InitWindow()
   {
     // Initialize GUI
     ImGui_ImplGlfwGL3_Init(window, false);
+#ifdef USE_TFN_MODULE
     tfnWidget = std::make_shared<tfn::tfn_widget::TransferFunctionWidget>
     ([]() { return 256; },
      [&](const std::vector<float> &c, const std::vector<float> &a) {
@@ -133,6 +137,7 @@ GLFWwindow *InitWindow()
        SetupTF(c.data(), o.data(), c.size() / 3, 1, o.size(), 1);
        framebuffer.CleanBuffer();
      });
+#endif
   }
   return window;
 }

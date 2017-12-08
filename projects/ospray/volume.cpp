@@ -1,5 +1,4 @@
 #include <limits>
-#include <tbb/tbb.h>
 #include "common.h"
 #include "global.h"
 #include "../reader/volume_reader.hpp"
@@ -15,7 +14,7 @@ void Timer(std::string str = "")
   else {
     t2 = std::chrono::system_clock::now();
     std::chrono::duration<double> dur = t2 - t1;
-    std::cout << str << " " << dur.count() << " seconds" << std::endl;
+    std::cout << "[timer] " << str << " " << dur.count() << " seconds" << std::endl;
     timing = false;
   }
 }

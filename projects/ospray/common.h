@@ -28,10 +28,10 @@
 #include <thread>
 
 //
-// OpenMP
+// threading
 //
 #include <omp.h>
-
+#include <tbb/tbb.h>
 //
 // GLFW
 //
