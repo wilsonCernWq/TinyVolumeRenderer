@@ -12,9 +12,6 @@ add_library(volume_reader ${CXX} ${HXX})
 target_link_libraries(volume_reader ${COMMON_LIBS})
 set_target_properties(volume_reader
   PROPERTIES
-  ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}"
-  LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}"
-  RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}"
   CXX_STANDARD 11)
 SET(VolumeReader_INCLUDE_DIRS ${CMAKE_CURRENT_LIST_DIR} PARENT_SCOPE)
 SET(VolumeReader_LIBRARIES volume_reader PARENT_SCOPE)

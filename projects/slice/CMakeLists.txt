@@ -26,9 +26,6 @@ add_library(common_${PID} ${CXX} ${HXX})
 target_link_libraries(common_${PID} ${VolumeReader_LIBRARIES} ${COMMON_LIBS})
 set_target_properties(common_${PID}
   PROPERTIES
-  ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}"
-  LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}"
-  RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}"
   CXX_STANDARD 11)
 #
 # add executable

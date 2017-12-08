@@ -28,22 +28,22 @@ void CreateVolume(int argc, const char **argv) {
   int data_type = 0, data_size = 0;
   void *volumeData = nullptr;
   float *gradientData = nullptr;
-  ospcommon::vec3i dims;
+  ospcommon::vec3i dims(0);
   ospcommon::vec2f vRange(std::numeric_limits<float>::max(), std::numeric_limits<float>::min());
   ospcommon::vec2f gRange(std::numeric_limits<float>::max(), std::numeric_limits<float>::min());
-  cleanlist.push_back([=]() {
+  cleanlist.emplace_back([=]() {
     delete[] (char *) volumeData;
     delete[] gradientData;
   });
 
   // load volume
-  Timer("");
+  Timer();
   ReadVolume(argv[1], data_type, data_size, dims.x, dims.y, dims.z, volumeData);
   Timer("load data");
 
   // gradient
   gradientData = new float[dims.x * dims.y * dims.z];
-  Timer("");
+  Timer();
   tbb::parallel_for(0, dims.x * dims.y * dims.z, [&](size_t k) {
     size_t x = k % dims.x;
     size_t y = (k % (dims.x * dims.y)) / dims.x;
@@ -64,9 +64,8 @@ void CreateVolume(int argc, const char **argv) {
   });
   Timer("compute gradient");
 
-
   // calculate histogram
-  Timer("");
+  Timer();
   float hist_max = 0.f;
   hist.resize(hist_xdim * hist_ydim, 0);
   for (int x = 0; x < dims.x; ++x) {
@@ -100,7 +99,7 @@ void CreateVolume(int argc, const char **argv) {
   const std::vector<float> opacities = {0.5f, 0.5f, 0.5f, 0.5f, 0.0f, 0.0f};
   UpdateTFN(colors.data(), opacities.data(), colors.size(), 1, opacities.size(), 1);
 
-  //! create ospray volume
+  // create ospray volume
   Timer();
   {
     OSPVolume volume = ospNewVolume("shared_structured_volume");

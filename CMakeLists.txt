@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.0)
-project(RayTracer)
+project(VolumeRenderer)
 #
 # options
 OPTION(EMABLE_SHARED "Enable shared Library" OFF)
