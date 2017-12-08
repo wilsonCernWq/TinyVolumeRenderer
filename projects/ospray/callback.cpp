@@ -25,24 +25,29 @@ static std::shared_ptr<tfn::tfn_widget::TransferFunctionWidget> tfnWidget;
 //-------------------------------------------------------------------------------------------------------------//
 
 static std::thread *osprayThread = nullptr;
-static std::atomic<bool> osprayWork(false);
-static std::atomic<bool> osprayInvalid(false);
+static std::atomic<bool> osprayStop(false);
+static std::atomic<bool> osprayClear(false);
 
-void RenderOSPRay() {
-  osprayThread = new std::thread([] {
-    while (osprayWork) {
+void StartOSPRay() {
+  osprayStop = false;
+  osprayThread = new std::thread([=] {
+    while (!osprayStop) {
+      if (osprayClear) {
+        framebuffer.CleanBuffer();
+        osprayClear = false;
+      }
       ospRenderFrame(framebuffer.OSPRayPtr(), renderer, OSP_FB_COLOR | OSP_FB_ACCUM);
+      framebuffer.Swap();
     }
   });
 }
 
-void ResizeOSPRay(int width, int height) {
-  osprayWork = false;
+void StopOSPRay() {
+  osprayStop = true;
   osprayThread->join();
-  framebuffer.Resize(width, height);
-  osprayWork = true;
-  RenderOSPRay();
 }
+
+bool ClearOSPRay() { osprayClear = true; }
 
 //-------------------------------------------------------------------------------------------------------------//
 
@@ -60,13 +65,13 @@ void cursor_position_callback(GLFWwindow *window, double xpos, double ypos) {
     int right_state = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT);
     if (left_state == GLFW_PRESS) {
       camera.CameraDrag(xpos, ypos);
-      framebuffer.CleanBuffer();
+      ClearOSPRay();
     } else {
       camera.CameraBeginDrag(xpos, ypos);
     }
     if (right_state == GLFW_PRESS) {
       camera.CameraZoom(xpos, ypos);
-      framebuffer.CleanBuffer();
+      ClearOSPRay();
     } else {
       camera.CameraBeginZoom(xpos, ypos);
     }
@@ -76,7 +81,9 @@ void cursor_position_callback(GLFWwindow *window, double xpos, double ypos) {
 void window_size_callback(GLFWwindow *window, int width, int height) {
   glViewport(0, 0, width, height);
   camera.CameraUpdateProj(width, height);
-  ResizeOSPRay(width, height);
+  StopOSPRay();
+  framebuffer.Resize(width, height);
+  StartOSPRay();
 }
 
 //-------------------------------------------------------------------------------------------------------------//
@@ -93,14 +100,13 @@ void RenderWindow(GLFWwindow *window) {
          std::vector<float> o(a.size() / 2);
          for (size_t i = 0; i < a.size() / 2; ++i) { o[i] = a[2 * i + 1]; }
          UpdateTFN(c.data(), o.data(), c.size() / 3, 1, o.size(), 1);
-         framebuffer.CleanBuffer();
+         ClearOSPRay();
        });
 #endif
     tfn::tfn_widget::InitUI();
   }
   // start ospray
-  osprayWork = true;
-  RenderOSPRay();
+  StartOSPRay();
   // render opengl
   while (!glfwWindowShouldClose(window)) {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -119,8 +125,7 @@ void RenderWindow(GLFWwindow *window) {
     glfwPollEvents();
   }
   // stop ospray
-  osprayWork = false;
-  osprayThread->join();
+  StopOSPRay();
   // shutdown GUI
   {
     ImGui_ImplGlfwGL3_Shutdown();
