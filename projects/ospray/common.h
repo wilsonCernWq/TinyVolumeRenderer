@@ -51,27 +51,27 @@
 
 //! @name error check helper from EPFL ICG class
 static inline const char *ErrorString(GLenum error) {
-    const char *msg;
-    switch (error) {
+  const char *msg;
+  switch (error) {
 #define Case(Token)  case Token: msg = #Token; break;
-        Case(GL_INVALID_ENUM);
-        Case(GL_INVALID_VALUE);
-        Case(GL_INVALID_OPERATION);
-        Case(GL_INVALID_FRAMEBUFFER_OPERATION);
-        Case(GL_NO_ERROR);
-        Case(GL_OUT_OF_MEMORY);
+    Case(GL_INVALID_ENUM);
+    Case(GL_INVALID_VALUE);
+    Case(GL_INVALID_OPERATION);
+    Case(GL_INVALID_FRAMEBUFFER_OPERATION);
+    Case(GL_NO_ERROR);
+    Case(GL_OUT_OF_MEMORY);
 #undef Case
-    }
-    return msg;
+  }
+  return msg;
 }
 
 //! @name check error
 static inline void _glCheckError
-        (const char *file, int line, const char *comment) {
-    GLenum error;
-    while ((error = glGetError()) != GL_NO_ERROR) {
-        fprintf(stderr, "ERROR: %s (file %s, line %i: %s).\n", comment, file, line, ErrorString(error));
-    }
+  (const char *file, int line, const char *comment) {
+  GLenum error;
+  while ((error = glGetError()) != GL_NO_ERROR) {
+    fprintf(stderr, "ERROR: %s (file %s, line %i: %s).\n", comment, file, line, ErrorString(error));
+  }
 }
 
 #ifndef NDEBUG
@@ -82,35 +82,33 @@ static inline void _glCheckError
 
 //! @name writePPM Helper function to write the rendered image as PPM file
 inline void writePPM
-        (const char *fileName, const glm::ivec2 &size, const uint32_t *pixel) {
-    using namespace ospcommon;
-    FILE *file = fopen(fileName, "wb");
-    fprintf(file, "P6\n%i %i\n255\n", size.x, size.y);
-    unsigned char *out = (unsigned char *) alloca(3 * size.x);
-    for (int y = 0; y < size.y; y++) {
-        const unsigned char *in =
-                (const unsigned char *) &pixel[(size.y - 1 - y) * size.x];
-        for (int x = 0; x < size.x; x++) {
-            out[3 * x + 0] = in[4 * x + 0];
-            out[3 * x + 1] = in[4 * x + 1];
-            out[3 * x + 2] = in[4 * x + 2];
-        }
-        fwrite(out, 3 * size.x, sizeof(char), file);
+  (const char *fileName, const glm::ivec2 &size, const uint32_t *pixel) {
+  using namespace ospcommon;
+  FILE *file = fopen(fileName, "wb");
+  fprintf(file, "P6\n%i %i\n255\n", size.x, size.y);
+  unsigned char *out = (unsigned char *) alloca(3 * size.x);
+  for (int y = 0; y < size.y; y++) {
+    const unsigned char *in =
+      (const unsigned char *) &pixel[(size.y - 1 - y) * size.x];
+    for (int x = 0; x < size.x; x++) {
+      out[3 * x + 0] = in[4 * x + 0];
+      out[3 * x + 1] = in[4 * x + 1];
+      out[3 * x + 2] = in[4 * x + 2];
     }
-    fprintf(file, "\n");
-    fclose(file);
+    fwrite(out, 3 * size.x, sizeof(char), file);
+  }
+  fprintf(file, "\n");
+  fclose(file);
 }
 
 // Timer
-inline void Timer(std::string str = "")
-{
+inline void Timer(std::string str = "") {
   static bool timing = false;
   static std::chrono::system_clock::time_point t1, t2;
   if (!timing) {
     timing = true;
     t1 = std::chrono::system_clock::now();
-  }
-  else {
+  } else {
     t2 = std::chrono::system_clock::now();
     std::chrono::duration<double> dur = t2 - t1;
     std::cout << "[timer] " << str << " " << dur.count() << " seconds" << std::endl;

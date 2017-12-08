@@ -3,8 +3,7 @@
 #include "volume.h"
 #include "callback.h"
 
-int main(int argc, const char **argv)
-{
+int main(int argc, const char **argv) {
   //---------------------------------------------------------------------------------------//
   // OpenGL Setup
   //---------------------------------------------------------------------------------------//
@@ -51,7 +50,7 @@ int main(int argc, const char **argv)
   ospSet1i(renderer, "shadowEnabled", 0);
   ospSet1i(renderer, "oneSidedLighting", 0);
   ospCommit(renderer);
-  
+
   //---------------------------------------------------------------------------------------//
   // Render
   //---------------------------------------------------------------------------------------//

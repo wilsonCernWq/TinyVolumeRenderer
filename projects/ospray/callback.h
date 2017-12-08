@@ -7,7 +7,7 @@
 
 #include "common.h"
 
-void RenderWindow(GLFWwindow * window);
+void RenderWindow(GLFWwindow *window);
 
 GLFWwindow *CreateWindow();
 

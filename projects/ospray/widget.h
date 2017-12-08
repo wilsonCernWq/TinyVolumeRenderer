@@ -6,10 +6,10 @@
 #define OSPRAY_WIDGET_H
 
 namespace tfn {
-  namespace tfn_widget {
-    void InitUI();
-    void DrawUI();
-  }
+namespace tfn_widget {
+void InitUI();
+void DrawUI();
+}
 }
 
 #endif //OSPRAY_WIDGET_H
