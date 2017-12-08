@@ -1,6 +1,24 @@
 #include <limits>
+#include <tbb/tbb.h>
 #include "common.h"
 #include "global.h"
+#include "../reader/volume_reader.hpp"
+
+void Timer(std::string str = "")
+{
+  static bool timing = false;
+  static std::chrono::system_clock::time_point t1, t2;
+  if (!timing) {
+    timing = true;
+    t1 = std::chrono::system_clock::now();
+  }
+  else {
+    t2 = std::chrono::system_clock::now();
+    std::chrono::duration<double> dur = t2 - t1;
+    std::cout << str << " " << dur.count() << " seconds" << std::endl;
+    timing = false;
+  }
+}
 
 void SetupTF(const void *colors, const void *opacities, int colorW, int colorH, int opacityW, int opacityH)
 {
@@ -25,8 +43,67 @@ void SetupTF(const void *colors, const void *opacities, int colorW, int colorH, 
 
 void volume(int argc, const char **argv)
 {
+  int data_type = 0, data_size = 0;
+  ospcommon::vec3i dims;
+  void*  volumeData = nullptr;
+  float* gradientData = nullptr;
+
+  Timer("");
+  ReadVolume(argv[1], data_type, data_size, dims.x, dims.y, dims.z, volumeData);
+  Timer("load data");
+
+  gradientData = new float [dims.x * dims.y * dims.z];
+  ospcommon::vec2f vRange(std::numeric_limits<float>::max(), std::numeric_limits<float>::min());
+  ospcommon::vec2f gRange(std::numeric_limits<float>::max(), std::numeric_limits<float>::min());
+
+  cleanlist.push_back([=]() { delete[] (char*)volumeData; delete[] gradientData; });
+
+  // gradient
+  Timer("");
+  tbb::parallel_for(0, dims.x * dims.y * dims.z, [&](size_t k) {
+    size_t x = k % dims.x;
+    size_t y = (k % (dims.x * dims.y)) / dims.x;
+    size_t z = k / (dims.x * dims.y);
+    auto i = z * dims.y * dims.x + y * dims.x + x;
+    auto v = ReadAs<float>(volumeData, i, data_type);
+    float idx = x == (dims.x - 1) ? -1 : 1;
+    float idy = y == (dims.y - 1) ? -dims.x : dims.x;
+    float idz = z == (dims.z - 1) ? -dims.x * dims.y : dims.x * dims.y;
+    auto dx = (ReadAs<float>(volumeData, i+idx, data_type) - v) / idx;
+    auto dy = (ReadAs<float>(volumeData, i+idy, data_type) - v) / idy;
+    auto dz = (ReadAs<float>(volumeData, i+idz, data_type) - v) / idz;
+    auto g = sqrtf(dx * dx + dy * dy + dz * dz);
+    vRange.x = std::min(vRange.x, v);
+    vRange.y = std::max(vRange.y, v);
+    gRange.x = std::min(gRange.x, g);
+    gRange.y = std::max(gRange.y, g);
+  });
+  Timer("compute gradient");
+
+  //! calculate hist
+  Timer("");
+  float hist_max = 0.f;
+  hist.resize(hist_xdim * hist_ydim, 0);
+  for (int x = 0; x < dims.x; ++x) {
+    for (int y = 0; y < dims.y; ++y) {
+      for (int z = 0; z < dims.z; ++z) {
+        const int i = z * dims.y * dims.x + y * dims.x + x;
+        const float v = ReadAs<float>(volumeData, i, data_type);
+        const float g = gradientData[i];
+        const int ix = round((hist_xdim - 1) * (v - vRange.x) / (vRange.y - vRange.x));
+        const int iy = round((hist_ydim - 1) * (g - gRange.x) / (gRange.y - gRange.x));
+        auto& hv = hist[iy * hist_xdim + ix];
+        hv += 1.f;
+        hist_max = std::max(hist_max, hv);
+      }
+    }
+  }
+  tbb::parallel_for(0, hist_xdim * hist_ydim, [&](size_t k) { hist[k] /= hist_max; });
+  Timer("compute histogram");
+
   //! transfer function
-  const std::vector<ospcommon::vec3f> colors = {
+  const std::vector<ospcommon::vec3f> colors =
+  {
   ospcommon::vec3f(0, 0, 0.563),
   ospcommon::vec3f(0, 0, 1),
   ospcommon::vec3f(0, 1, 1),
@@ -37,55 +114,12 @@ void volume(int argc, const char **argv)
   };
   const std::vector<float> opacities = {0.5f, 0.5f, 0.5f, 0.5f, 0.0f, 0.0f};
   SetupTF(colors.data(), opacities.data(), colors.size(), 1, opacities.size(), 1);
-  //! create volume
-  const ospcommon::vec3i dims(256, 128, 128);
-  const float coef = 1.f / (float) (dims.x - 1) * (float) M_PI / 2.0f;
-  ospcommon::vec2f vRange(std::numeric_limits<float>::max(), std::numeric_limits<float>::min());
-  ospcommon::vec2f gRange(std::numeric_limits<float>::max(), std::numeric_limits<float>::min());
-  auto volumeData = new unsigned char[dims.x * dims.y * dims.z];
-  auto gradientData = new float[dims.x * dims.y * dims.z];
-  cleanlist.push_back([=]() { delete[] volumeData; });
-  for (int x = 0; x < dims.x; ++x) {
-    for (int y = 0; y < dims.y; ++y) {
-      for (int z = 0; z < dims.z; ++z) {
-        auto i = z * dims.y * dims.x + y * dims.x + x;
-        auto v = sin(coef * x) * 255.0f;
-        auto g = coef * cos(coef * x) * 255.0f;
-        vRange.x = std::min(vRange.x, v);
-        vRange.y = std::max(vRange.y, v);
-        gRange.x = std::min(gRange.x, g);
-        gRange.y = std::max(gRange.y, g);
-        volumeData[i] = static_cast<unsigned char>(v);
-        gradientData[i] = g;
-      }
-    }
-  }
-  //! calculate hist
-  float hist_max = 0.f;
-  hist.resize(hist_xdim * hist_ydim, 0);
-  for (int x = 0; x < dims.x; ++x) {
-    for (int y = 0; y < dims.y; ++y) {
-      for (int z = 0; z < dims.z; ++z) {
-        const int i = z * dims.y * dims.x + y * dims.x + x;
-        const float v = volumeData[i];
-        const float g = gradientData[i];
-        const int ix = round((hist_xdim - 1) * (v - vRange.x) / (vRange.y - vRange.x));
-        const int iy = round((hist_ydim - 1) * (g - gRange.x) / (gRange.y - gRange.x));
-        auto& hv = hist[iy * hist_xdim + ix];
-        hv += 1.f;
-        hist_max = std::max(hist_max, hv);
-      }
-    }
-  }
-  for (auto &v : hist) {
-    v /= hist_max;
-  }
 
   //! create ospray volume
-  auto t1 = std::chrono::system_clock::now();
+  Timer();
   {
     OSPVolume volume = ospNewVolume("shared_structured_volume");
-    OSPData voxelData = ospNewData(dims.x * dims.y * dims.z, OSP_UCHAR, volumeData, OSP_DATA_SHARED_BUFFER);
+    OSPData voxelData = ospNewData(dims.x * dims.y * dims.z * data_size, OSP_UCHAR, volumeData, OSP_DATA_SHARED_BUFFER);
     cleanlist.push_back([=]() {
       ospRelease(volume);
       ospRelease(voxelData);
@@ -105,7 +139,5 @@ void volume(int argc, const char **argv)
     ospCommit(volume);
     ospAddVolume(world, volume);
   }
-  auto t2 = std::chrono::system_clock::now();
-  std::chrono::duration<double> dur = t2 - t1;
-  std::cout << "finish commits " << dur.count() << " seconds" << std::endl;
+  Timer("finish commit");
 }

@@ -30,7 +30,10 @@ add_executable(ospVolume main.cpp
   camera.h framebuffer.h
   trackball.h common.h
   ${TFN_MODULE_SRC})
-target_link_libraries(ospVolume ${COMMON_LIBS})
+target_link_libraries(ospVolume volume_reader ${COMMON_LIBS})
 set_target_properties(ospVolume
   PROPERTIES
+  ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}"
+  LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}"
+  RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}"
   CXX_STANDARD 11)

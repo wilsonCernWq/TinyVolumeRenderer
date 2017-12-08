@@ -11,7 +11,6 @@
 #else
 # error "GLM is required here"
 #endif
-#include <cstdio>
 #include <cassert>
 #include <fstream>
 #include <string>
