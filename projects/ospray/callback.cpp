@@ -6,6 +6,8 @@
 #include "volume.h"
 #include "widget.h"
 
+#include <thread>
+#include <atomic>
 #include <memory>
 #include <imgui.h>
 #include <imgui_impl_glfw_gl3.h>
@@ -19,27 +21,33 @@
 #ifdef USE_TFN_MODULE
 static std::shared_ptr<tfn::tfn_widget::TransferFunctionWidget> tfnWidget;
 #endif
-//! functions
-void Clean()
+
+//-------------------------------------------------------------------------------------------------------------//
+
+static std::thread* osprayThread = nullptr;
+static std::atomic<bool> osprayWork(false);
+static std::atomic<bool> osprayInvalid(false);
+
+void RenderOSPRay()
 {
-  std::cout << "cleaning" << std::endl;
-  camera.Clean();
-  framebuffer.Clean();
-  if (world != nullptr) {
-    ospRelease(world);
-    world = nullptr;
-  }
-  if (renderer != nullptr) {
-    ospRelease(renderer);
-    renderer = nullptr;
-  }
-  if (transferFcn != nullptr) {
-    ospRelease(transferFcn);
-    transferFcn = nullptr;
-  }
-  std::cout << "cleaning other stuffs" << std::endl;
-  for (auto &c : cleanlist) { c(); }
+  osprayThread = new std::thread([] {
+    while (osprayWork)
+    {
+      ospRenderFrame(framebuffer.OSPRayPtr(), renderer, OSP_FB_COLOR | OSP_FB_ACCUM);
+    }
+  });
 }
+
+void ResizeOSPRay(int width, int height)
+{
+  osprayWork = false;
+  osprayThread->join();
+  framebuffer.Resize(width, height);
+  osprayWork = true;
+  RenderOSPRay();
+}
+
+//-------------------------------------------------------------------------------------------------------------//
 
 void error_callback(int error, const char *description)
 {
@@ -56,15 +64,19 @@ void cursor_position_callback(GLFWwindow *window, double xpos, double ypos)
   if (!ImGui::GetIO().WantCaptureMouse) {
     int left_state = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT);
     int right_state = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT);
-    if (left_state == GLFW_PRESS) { camera.CameraDrag(xpos, ypos); }
-    else {
-      camera.CameraBeginDrag(xpos, ypos);
+    if (left_state == GLFW_PRESS) {
+      camera.CameraDrag(xpos, ypos);
       framebuffer.CleanBuffer();
     }
-    if (right_state == GLFW_PRESS) { camera.CameraZoom(xpos, ypos); }
     else {
-      camera.CameraBeginZoom(xpos, ypos);
+      camera.CameraBeginDrag(xpos, ypos);
+    }
+    if (right_state == GLFW_PRESS) {
+      camera.CameraZoom(xpos, ypos);
       framebuffer.CleanBuffer();
+    }
+    else {
+      camera.CameraBeginZoom(xpos, ypos);      
     }
   }
 }
@@ -73,26 +85,63 @@ void window_size_callback(GLFWwindow *window, int width, int height)
 {
   glViewport(0, 0, width, height);
   camera.CameraUpdateProj(width, height);
-  framebuffer.Resize(width, height);
+  ResizeOSPRay(width, height);
 }
 
-void render()
+//-------------------------------------------------------------------------------------------------------------//
+
+void RenderWindow(GLFWwindow * window)
 {
-  ospRenderFrame(framebuffer.OSPRayPtr(), renderer, OSP_FB_COLOR | OSP_FB_ACCUM);
-  framebuffer.Upload();
-  // Draw GUI
+  // init GUI
   {
-    ImGui_ImplGlfwGL3_NewFrame();
+    // Initialize GUI
+    ImGui_ImplGlfwGL3_Init(window, false);
 #ifdef USE_TFN_MODULE
-    tfnWidget->drawUi();
-    tfnWidget->render();
+    tfnWidget = std::make_shared<tfn::tfn_widget::TransferFunctionWidget>
+    ([ ]() { return 256; },
+     [&](const std::vector<float> &c, const std::vector<float> &a) {
+       std::vector<float> o(a.size() / 2);
+       for (size_t i = 0; i < a.size() / 2; ++i) { o[i] = a[2 * i + 1]; }
+       UpdateTFN(c.data(), o.data(), c.size() / 3, 1, o.size(), 1);
+       framebuffer.CleanBuffer();
+     });
 #endif
-    tfn2d::DrawUI();
-    ImGui::Render();
+    tfn::tfn_widget::InitUI();
   }
+  // start ospray
+  osprayWork = true;
+  RenderOSPRay();
+  // render opengl
+  while (!glfwWindowShouldClose(window))
+  {
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    // render GUI
+    {
+      framebuffer.Upload();
+      ImGui_ImplGlfwGL3_NewFrame();
+#ifdef USE_TFN_MODULE
+      tfnWidget->drawUi();
+      tfnWidget->render();
+#endif
+      tfn::tfn_widget::DrawUI();
+      ImGui::Render();
+    }
+    glfwSwapBuffers(window);
+    glfwPollEvents();
+  }
+  // stop ospray
+  osprayWork = false;
+  osprayThread->join();
+  // shutdown GUI
+  {
+    ImGui_ImplGlfwGL3_Shutdown();
+  }
+  // shutdown opengl
+  glfwDestroyWindow(window);
+  glfwTerminate();
 }
 
-GLFWwindow *InitWindow()
+GLFWwindow *CreateWindow()
 {
   // Initialize GLFW
   glfwSetErrorCallback(error_callback);
@@ -124,32 +173,5 @@ GLFWwindow *InitWindow()
   // Setup OpenGL
   glEnable(GL_DEPTH_TEST);
   check_error_gl("Setup OpenGL Options");
-  // GUI
-  {
-    // Initialize GUI
-    ImGui_ImplGlfwGL3_Init(window, false);
-#ifdef USE_TFN_MODULE
-    tfnWidget = std::make_shared<tfn::tfn_widget::TransferFunctionWidget>
-    ([]() { return 256; },
-     [&](const std::vector<float> &c, const std::vector<float> &a) {
-       std::vector<float> o(a.size() / 2);
-       for (size_t i = 0; i < a.size() / 2; ++i) { o[i] = a[2 * i + 1]; }
-       SetupTF(c.data(), o.data(), c.size() / 3, 1, o.size(), 1);
-       framebuffer.CleanBuffer();
-     });
-#endif
-  }
   return window;
-}
-
-void ShutdownWindow(GLFWwindow *window)
-{
-  // GUI
-  {
-    // Shutup GUI
-    ImGui_ImplGlfwGL3_Shutdown();
-    tfn2d::InitUI();
-  }
-  // Shutup window
-  glfwDestroyWindow(window);
 }

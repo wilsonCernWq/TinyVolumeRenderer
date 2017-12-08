@@ -1,8 +1,7 @@
 #include "common.h"
 #include "global.h"
+#include "volume.h"
 #include "callback.h"
-
-void volume(int argc, const char **argv);
 
 int main(int argc, const char **argv)
 {
@@ -10,7 +9,7 @@ int main(int argc, const char **argv)
   // OpenGL Setup
   //---------------------------------------------------------------------------------------//
   // Create Context
-  GLFWwindow *window = InitWindow();
+  GLFWwindow *window = CreateWindow();
   check_error_gl("Initialized OpenGL");
 
   //---------------------------------------------------------------------------------------//
@@ -29,7 +28,7 @@ int main(int argc, const char **argv)
 
   //! setup volume/geometry
   transferFcn = ospNewTransferFunction("piecewise_linear_2d");
-  volume(argc, argv);
+  CreateVolume(argc, argv);
   ospCommit(world);
 
   //! lighting
@@ -52,20 +51,11 @@ int main(int argc, const char **argv)
   ospSet1i(renderer, "shadowEnabled", 0);
   ospSet1i(renderer, "oneSidedLighting", 0);
   ospCommit(renderer);
+  
   //---------------------------------------------------------------------------------------//
   // Render
   //---------------------------------------------------------------------------------------//
-  while (!glfwWindowShouldClose(window)) {
-    // clear
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    // render
-    render();
-    // swap frame
-    glfwSwapBuffers(window);
-    glfwPollEvents();
-  }
-  ShutdownWindow(window);
-  glfwTerminate();
+  RenderWindow(window);
 
   // exit
   Clean();

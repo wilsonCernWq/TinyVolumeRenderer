@@ -1,9 +1,9 @@
 //!
 //! This file defines some global variables and all callback functions
 //!
+#ifndef OSPRAY_GLOBAL_H
+#define OSPRAY_GLOBAL_H
 #pragma once
-#ifndef _GLOBAL_H_
-#define _GLOBAL_H_
 
 #include "common.h"
 #include "camera.h"
@@ -28,5 +28,6 @@ extern const int hist_xdim, hist_ydim;
 
 // cleaning
 extern std::vector<std::function<void()>> cleanlist;
+void Clean();
 
-#endif//_GLOBAL_H_
+#endif //OSPRAY_GLOBAL_H

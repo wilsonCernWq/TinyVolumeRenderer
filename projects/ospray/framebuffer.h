@@ -49,8 +49,7 @@ public:
             glBindFramebuffer(GL_READ_FRAMEBUFFER, fboID);
             glBlitFramebuffer(0, 0, W, H, 0, 0, W, H,
                               GL_COLOR_BUFFER_BIT, GL_NEAREST);
-            //glBindTexture(GL_TEXTURE_2D, 0);
-            //writePPM("rendered.ppm", glm::ivec2(W,H), mapped_ptr);
+            glBindTexture(GL_TEXTURE_2D, 0);
         }
     }
 

@@ -19,7 +19,7 @@ void Timer(std::string str = "")
   }
 }
 
-void SetupTF(const void *colors, const void *opacities, int colorW, int colorH, int opacityW, int opacityH)
+void UpdateTFN(const void *colors, const void *opacities, int colorW, int colorH, int opacityW, int opacityH)
 {
   //! setup trasnfer function
   OSPData colorsData = ospNewData(colorW * colorH, OSP_FLOAT3, colors);
@@ -40,24 +40,24 @@ void SetupTF(const void *colors, const void *opacities, int colorW, int colorH, 
   ospRelease(opacitiesData);
 }
 
-void volume(int argc, const char **argv)
+void CreateVolume(int argc, const char **argv)
 {
+  // initialization
   int data_type = 0, data_size = 0;
-  ospcommon::vec3i dims;
-  void*  volumeData = nullptr;
+  void*  volumeData   = nullptr;
   float* gradientData = nullptr;
+  ospcommon::vec3i dims;
+  ospcommon::vec2f vRange(std::numeric_limits<float>::max(), std::numeric_limits<float>::min());
+  ospcommon::vec2f gRange(std::numeric_limits<float>::max(), std::numeric_limits<float>::min());
+  cleanlist.push_back([=]() { delete[] (char*)volumeData; delete[] gradientData; });
 
+  // load volume
   Timer("");
   ReadVolume(argv[1], data_type, data_size, dims.x, dims.y, dims.z, volumeData);
   Timer("load data");
 
-  gradientData = new float [dims.x * dims.y * dims.z];
-  ospcommon::vec2f vRange(std::numeric_limits<float>::max(), std::numeric_limits<float>::min());
-  ospcommon::vec2f gRange(std::numeric_limits<float>::max(), std::numeric_limits<float>::min());
-
-  cleanlist.push_back([=]() { delete[] (char*)volumeData; delete[] gradientData; });
-
   // gradient
+  gradientData = new float [dims.x * dims.y * dims.z];
   Timer("");
   tbb::parallel_for(0, dims.x * dims.y * dims.z, [&](size_t k) {
     size_t x = k % dims.x;
@@ -78,8 +78,9 @@ void volume(int argc, const char **argv)
     gRange.y = std::max(gRange.y, g);
   });
   Timer("compute gradient");
+  
 
-  //! calculate hist
+  // calculate histogram
   Timer("");
   float hist_max = 0.f;
   hist.resize(hist_xdim * hist_ydim, 0);
@@ -112,25 +113,23 @@ void volume(int argc, const char **argv)
   ospcommon::vec3f(0.5, 0, 0),
   };
   const std::vector<float> opacities = {0.5f, 0.5f, 0.5f, 0.5f, 0.0f, 0.0f};
-  SetupTF(colors.data(), opacities.data(), colors.size(), 1, opacities.size(), 1);
+  UpdateTFN(colors.data(), opacities.data(), colors.size(), 1, opacities.size(), 1);
 
   //! create ospray volume
   Timer();
   {
     OSPVolume volume = ospNewVolume("shared_structured_volume");
-    OSPData voxelData = ospNewData(dims.x * dims.y * dims.z * data_size, OSP_UCHAR, volumeData, OSP_DATA_SHARED_BUFFER);
-    cleanlist.push_back([=]() {
-      ospRelease(volume);
-      ospRelease(voxelData);
-    });
+    OSPData voxelData = ospNewData(dims.x * dims.y * dims.z * data_size, OSP_UCHAR,
+				   volumeData, OSP_DATA_SHARED_BUFFER);
+    cleanlist.push_back([=]() { ospRelease(volume); ospRelease(voxelData); });
     ospSetString(volume, "voxelType", "uchar");
     ospSetVec3i(volume, "dimensions", (osp::vec3i &) dims);
     ospSetVec3f(volume, "gridOrigin", osp::vec3f{-1.0f, -1.0f, -1.0f});
     ospSetVec3f(volume, "gridSpacing", osp::vec3f{2.f/dims.x, 2.f/dims.y, 2.f/dims.z});
-    ospSet1f(volume, "samplingRate", 9.0f);
+    //ospSet1f(volume, "samplingRate", 5.0f);
+    ospSet1i(volume, "adaptiveSampling", 1);
     ospSet1i(volume, "gradientShadingEnabled", 0);
     ospSet1i(volume, "useGridAccelerator", 0);
-    ospSet1i(volume, "adaptiveSampling", 0);
     ospSet1i(volume, "preIntegration", 0);
     ospSet1i(volume, "singleShade", 0);
     ospSetData(volume, "voxelData", voxelData);

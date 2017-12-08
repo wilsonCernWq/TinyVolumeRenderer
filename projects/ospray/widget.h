@@ -5,9 +5,11 @@
 #ifndef RAYTRACER_GUI_H
 #define RAYTRACER_GUI_H
 
-namespace tfn2d {
-void InitUI();
-void DrawUI();
+namespace tfn {
+  namespace tfn_widget {
+    void InitUI();
+    void DrawUI();
+  }
 }
 
 #endif //RAYTRACER_GUI_H
