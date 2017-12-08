@@ -9,23 +9,24 @@
 #include "camera.h"
 #include "framebuffer.h"
 
-//! camera
-Camera camera;
+// camera
+extern Camera camera;
 
-//! framebuffers
-Framebuffer framebuffer;
+// framebuffers
+extern Framebuffer framebuffer;
 
-//! renderer
-OSPModel world = nullptr;
-OSPRenderer renderer = nullptr;
+// renderer
+extern OSPModel world;
+extern OSPRenderer renderer;
 
-//! transfer function
-OSPTransferFunction transferFcn = nullptr;
+// transfer function
+extern OSPTransferFunction transferFcn;
 
-void SetupTF(const void *colors, const void *opacities,
-             int colorW, int colorH, int opacityW, int opacityH);
+// histogram
+extern std::vector<float> hist;
+extern const int hist_xdim, hist_ydim;
 
-//! cleaning
-std::vector<std::function<void()>> cleanlist;
+// cleaning
+extern std::vector<std::function<void()>> cleanlist;
 
 #endif//_GLOBAL_H_
