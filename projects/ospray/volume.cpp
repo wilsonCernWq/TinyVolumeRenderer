@@ -50,7 +50,6 @@ void UpdateHistogram() {
   const float gScale = (float)(histYDim - 1) / (gRange.y - gRange.x);
   const float aScale = (float)(histZDim - 1) / (aRange.y - aRange.x);
   tbb::parallel_for(0, (data_dims.x - 2) * (data_dims.y - 2) * (data_dims.z - 2), [&](size_t k) {
-  //for (size_t k = 0; k <  (data_dims.x - 2) * (data_dims.y - 2) * (data_dims.z - 2); ++k) {
     const float v = vData[k];
     const float g = gData[k];
     const float a = aData[k];
@@ -58,14 +57,7 @@ void UpdateHistogram() {
     const size_t iy = (size_t) round((g - gRange.x) * gScale);
     const size_t iz = (size_t) round((a - aRange.x) * aScale);
     ++histVolumeAccess(ix, iy, iz);
-  //}
   });
-//  for (size_t k = 0; k <  histXDim * histYDim * histZDim; ++k) {
-//    size_t x = k % histXDim;
-//    size_t y = (k % (histXDim * histYDim)) / histXDim;
-//    size_t z = k / (histXDim * histYDim);
-//    std::cout << x << " " << y << " " << z << " " << histVolume[k] << std::endl;
-//  }
   // timing
   Timer("compute histogram");
 }
