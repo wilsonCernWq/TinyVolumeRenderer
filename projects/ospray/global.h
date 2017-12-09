@@ -8,27 +8,23 @@
 #include "common/common.h"
 #include "common/camera.h"
 #include "common/framebuffer.h"
+#include "common/volume.h"
 
 // camera
 extern Camera camera;
 
-// framebuffers
+// framebuffer
 extern Framebuffer framebuffer;
+
+// volume
+extern Volume volume;
 
 // renderer
 extern OSPModel world;
 extern OSPRenderer renderer;
 
-// transfer function
-extern OSPTransferFunction transferFcn;
-
-// histogram
-extern const size_t histXDim, histYDim, histZDim, histCount;
-extern std::atomic<size_t>* histVolume;
-inline size_t histIdx(size_t x, size_t y, size_t z) { return z * histYDim * histXDim + y * histXDim + x; }
-
 // cleaning
-extern std::vector<std::function<void()>> cleanlist;
+extern std::vector<std::function<void()>> clean_list;
 void Clean();
 
 #endif //OSPRAY_GLOBAL_H

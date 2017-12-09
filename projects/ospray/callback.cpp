@@ -3,12 +3,9 @@
 //
 #include "callback.h"
 #include "global.h"
-#include "volume.h"
 #include "widget.h"
 
 #include <thread>
-#include <atomic>
-#include <memory>
 #include <imgui.h>
 #include <imgui_impl_glfw_gl3.h>
 
@@ -58,25 +55,25 @@ void cursor_position_callback(GLFWwindow *window, double xpos, double ypos) {
     int left_state = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT);
     int right_state = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT);
     if (left_state == GLFW_PRESS) {
-      camera.CameraDrag(xpos, ypos);
+      camera.CameraDrag((float)xpos, (float)ypos);
       ClearOSPRay();
     } else {
-      camera.CameraBeginDrag(xpos, ypos);
+      camera.CameraBeginDrag((float)xpos, (float)ypos);
     }
     if (right_state == GLFW_PRESS) {
-      camera.CameraZoom(xpos, ypos);
+      camera.CameraZoom((float)xpos, (float)ypos);
       ClearOSPRay();
     } else {
-      camera.CameraBeginZoom(xpos, ypos);
+      camera.CameraBeginZoom((float)xpos, (float)ypos);
     }
   }
 }
 
 void window_size_callback(GLFWwindow *window, int width, int height) {
   glViewport(0, 0, width, height);
-  camera.CameraUpdateProj(width, height);
+  camera.CameraUpdateProj((size_t)width, (size_t)height);
   StopOSPRay();
-  framebuffer.Resize(width, height);
+  framebuffer.Resize((size_t)width, (size_t)height);
   StartOSPRay();
 }
 
@@ -93,7 +90,7 @@ void RenderWindow(GLFWwindow *window) {
        [&](const std::vector<float> &c, const std::vector<float> &a) {
          std::vector<float> o(a.size() / 2);
          for (size_t i = 0; i < a.size() / 2; ++i) { o[i] = a[2 * i + 1]; }
-         UpdateTFN(c.data(), o.data(), c.size() / 3, 1, o.size(), 1);
+         volume.GetTransferFunction().Update(c.data(), o.data(), c.size() / 3, 1, o.size(), 1);
          ClearOSPRay();
        });
 #endif
@@ -140,10 +137,10 @@ GLFWwindow *CreateWindow() {
   glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, 1);
   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
   // Create Window
-  GLFWwindow *window = glfwCreateWindow(camera.CameraWidth(),
-                                        camera.CameraHeight(),
+  GLFWwindow *window = glfwCreateWindow((int)camera.CameraWidth(),
+                                        (int)camera.CameraHeight(),
                                         "OSPRay Volume Test Renderer",
-                                        NULL, NULL);
+                                        nullptr, nullptr);
   if (!window) {
     glfwTerminate();
     exit(EXIT_FAILURE);

@@ -14,12 +14,13 @@ if (TFN_MODULE_ROOT)
     ${TFN_MODULE_ROOT}/src/TransferFunctionModule.cpp
     ${TFN_MODULE_ROOT}/src/TransferFunctionModule.h
     ${TFN_MODULE_ROOT}/src/widgets/TransferFunctionWidget.cpp
-    ${TFN_MODULE_ROOT}/src/widgets/TransferFunctionWidget.h volume.h)
+    ${TFN_MODULE_ROOT}/src/widgets/TransferFunctionWidget.h common/volume.h)
   add_definitions(-DUSE_TFN_MODULE)
   mark_as_advanced(TFN_MODULE_SRC)
 endif (TFN_MODULE_ROOT)
 #
 # include sources
+include_directories(${CMAKE_CURRENT_LIST_DIR})
 file(GLOB_RECURSE CXX "${CMAKE_CURRENT_LIST_DIR}/*.cpp")
 file(GLOB_RECURSE HXX "${CMAKE_CURRENT_LIST_DIR}/*.h")
 add_executable(viewer_ospray
@@ -27,9 +28,12 @@ add_executable(viewer_ospray
   callback.cpp callback.h
   widget.cpp widget.h
   global.cpp global.h
-  volume.cpp volume.h
-  common/camera.h common/framebuffer.h
-  common/trackball.h common/common.h
+  common/volume.cpp common/volume.h
+  common/transferfunction.cpp common/transferfunction.h
+  common/camera.h
+  common/framebuffer.h
+  common/trackball.h
+  common/common.h
   ${TFN_MODULE_SRC})
 target_link_libraries(viewer_ospray volume_reader ${COMMON_LIBS})
 set_target_properties(viewer_ospray

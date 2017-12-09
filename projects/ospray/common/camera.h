@@ -1,8 +1,8 @@
 #pragma once
 #ifndef OSPRAY_CAMERA_H
 #define OSPRAY_CAMERA_H
-#include "common.h"
-#include "trackball.h"
+#include "common/common.h"
+#include "common/trackball.h"
 
 class Camera {
 private:

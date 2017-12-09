@@ -14,18 +14,6 @@
 #include "ospray/ospcommon/vec.h"
 
 //
-// include cpp standard library
-//
-#include <cmath>
-#include <string>
-#include <iostream>
-#include <chrono>
-#include <vector>
-#include <atomic>
-#include <algorithm>
-#include <functional>
-
-//
 // threading
 //
 #include <omp.h>
@@ -87,23 +75,23 @@ inline void writePPM
   using namespace ospcommon;
   FILE *file = fopen(fileName, "wb");
   fprintf(file, "P6\n%i %i\n255\n", size.x, size.y);
-  unsigned char *out = (unsigned char *) alloca(3 * size.x);
+  auto *out = (unsigned char *) alloca(3 * size.x);
   for (int y = 0; y < size.y; y++) {
-    const unsigned char *in =
+    const auto *in =
       (const unsigned char *) &pixel[(size.y - 1 - y) * size.x];
     for (int x = 0; x < size.x; x++) {
       out[3 * x + 0] = in[4 * x + 0];
       out[3 * x + 1] = in[4 * x + 1];
       out[3 * x + 2] = in[4 * x + 2];
     }
-    fwrite(out, 3 * size.x, sizeof(char), file);
+    fwrite(out, (size_t)3 * size.x, sizeof(char), file);
   }
   fprintf(file, "\n");
   fclose(file);
 }
 
 // Timer
-inline void Timer(std::string str = "") {
+inline void Timer(const std::string& str = "") {
   static bool timing = false;
   static std::chrono::system_clock::time_point t1, t2;
   if (!timing) {

@@ -4,7 +4,6 @@
 #include "widget.h"
 #include "common/common.h"
 #include "global.h"
-#include "volume.h"
 #include <imgui.h>
 
 static bool hist_render = true;
@@ -48,46 +47,64 @@ void RenderTFNTexture(GLuint &tex, const std::vector <size_t>& counts,
                static_cast<const void *>(tex_data.data()));
 }
 void RenderTFN() {
-  if (hist_tex[0] == 0) { CreateTFNTexture(hist_tex[0], histXDim, histYDim); }
-  if (hist_tex[1] == 0) { CreateTFNTexture(hist_tex[1], histXDim, histZDim); }
+  if (hist_tex[0] == 0) {
+    CreateTFNTexture(hist_tex[0],
+                     volume.GetHistogram().HistXDim(),
+                     volume.GetHistogram().HistYDim());
+  }
+  if (hist_tex[1] == 0) {
+    CreateTFNTexture(hist_tex[1],
+                     volume.GetHistogram().HistXDim(),
+                     volume.GetHistogram().HistZDim());
+  }
   if (hist_render) {
     //---------------------------------------------------------------------------------------------------------------//
     {
-      std::vector <size_t> hist_count(histXDim * histYDim,0);
+      std::vector <size_t> hist_count(volume.GetHistogram().HistCountXY(),0);
       size_t hist_max(0);
-      for (int k = 0; k < histXDim * histYDim; ++k) {
-        const size_t ix = k % histXDim;
-        const size_t iy = k / histXDim;
-        const float v = ix * (GetValueRangeY() - GetValueRangeX()) / histXDim + GetValueRangeX();
-        const float g = iy * (Get1stGradientRangeY() - Get1stGradientRangeX()) / histYDim + Get1stGradientRangeX();
+      for (int k = 0; k < volume.GetHistogram().HistCountXY(); ++k) {
+        const size_t ix = k % volume.GetHistogram().HistXDim();
+        const size_t iy = k / volume.GetHistogram().HistXDim();
+        const float v = volume.SampleHistX(ix);
+        const float g = volume.SampleHistY(iy);
         size_t count = 0;
         if (v >= hist_range[0] && v <= hist_range[1] && g >= hist_range[2] && g <= hist_range[3])
         {
-          for (size_t iz = 0; iz < histZDim; ++iz) { count += histVolume[histIdx(ix, iy, iz)]; }
+          for (size_t iz = 0; iz < volume.GetHistogram().HistZDim(); ++iz) {
+            count += volume.GetHistogram().At(ix, iy, iz);
+          }
           hist_max = std::max(hist_max, count);
         }
         hist_count[k] = count;
       }
-      RenderTFNTexture(hist_tex[0], hist_count, histXDim, histYDim, 0.01f * hist_clamp[0] * hist_max, hist_gamma[0]);
+      RenderTFNTexture(hist_tex[0], hist_count,
+                       volume.GetHistogram().HistXDim(),
+                       volume.GetHistogram().HistYDim(),
+                       0.01f * hist_clamp[0] * hist_max, hist_gamma[0]);
     }
     //---------------------------------------------------------------------------------------------------------------//
     {
-      std::vector <size_t> hist_count(histXDim * histZDim, 0);
+      std::vector <size_t> hist_count(volume.GetHistogram().HistCountXZ(), 0);
       size_t hist_max(0);
-      for (int k = 0; k < histXDim * histZDim; ++k) {
-        const size_t ix = k % histXDim;
-        const size_t iz = k / histXDim;
-        const float v = ix * (GetValueRangeY() - GetValueRangeX()) / histXDim + GetValueRangeX();
-        const float a = iz * (Get2ndGradientRangeY() - Get2ndGradientRangeX()) / histZDim + Get2ndGradientRangeX();
+      for (int k = 0; k < volume.GetHistogram().HistCountXZ(); ++k) {
+        const size_t ix = k % volume.GetHistogram().HistXDim();
+        const size_t iz = k / volume.GetHistogram().HistXDim();
+        const float v = volume.SampleHistX(ix);
+        const float a = volume.SampleHistZ(iz);
         size_t count = 0;
         if (v >= hist_range[0] && v <= hist_range[1] && a >= hist_range[4] && a <= hist_range[5])
         {
-          for (size_t iy = 0; iy < histYDim; ++iy) { count += histVolume[histIdx(ix, iy, iz)]; }
+          for (size_t iy = 0; iy < volume.GetHistogram().HistYDim(); ++iy) {
+            count += volume.GetHistogram().At(ix, iy, iz);
+          }
           hist_max = std::max(hist_max, count);
         }
         hist_count[k] = count;
       }
-      RenderTFNTexture(hist_tex[1], hist_count, histXDim, histZDim, 0.01f * hist_clamp[1] * hist_max, hist_gamma[1]);
+      RenderTFNTexture(hist_tex[1], hist_count,
+                       volume.GetHistogram().HistXDim(),
+                       volume.GetHistogram().HistZDim(),
+                       0.01f * hist_clamp[1] * hist_max, hist_gamma[1]);
     }
     //---------------------------------------------------------------------------------------------------------------//
     hist_render = false;
@@ -97,12 +114,12 @@ void RenderTFN() {
 // Global
 //------------------------------------------------------------------------------------------------//
 void InitUI() {
-  hist_range[0] = GetValueRangeX();
-  hist_range[1] = GetValueRangeY();
-  hist_range[2] = Get1stGradientRangeX();
-  hist_range[3] = Get1stGradientRangeY();
-  hist_range[4] = Get2ndGradientRangeX();
-  hist_range[5] = Get2ndGradientRangeY();
+  hist_range[0] = volume.GetValueRangeX();
+  hist_range[1] = volume.GetValueRangeY();
+  hist_range[2] = volume.Get1stGradientRangeX();
+  hist_range[3] = volume.Get1stGradientRangeY();
+  hist_range[4] = volume.Get2ndGradientRangeX();
+  hist_range[5] = volume.Get2ndGradientRangeY();
 }
 void DrawUI() {
   RenderTFN();
@@ -111,20 +128,23 @@ void DrawUI() {
     return;
   }
   ImGui::Text("2D Transfer Function");
-  if (ImGui::DragFloatRange2("f    range", &hist_range[0], &hist_range[1],
-                             0.25f, GetValueRangeX(), GetValueRangeY(),
+  if (ImGui::DragFloatRange2("f    range", &hist_range[0], &hist_range[1], 0.25f,
+                             volume.GetValueRangeX(),
+                             volume.GetValueRangeY(),
                              "Min: %.1f", "Max: %.1f"))
   {
     hist_render = true;
   }
-  if (ImGui::DragFloatRange2("f'  range", &hist_range[2], &hist_range[3],
-                             0.25f, Get1stGradientRangeX(), Get1stGradientRangeY(),
+  if (ImGui::DragFloatRange2("f'  range", &hist_range[2], &hist_range[3], 0.25f,
+                             volume.Get1stGradientRangeX(),
+                             volume.Get1stGradientRangeY(),
                              "Min: %.1f", "Max: %.1f"))
   {
     hist_render = true;
   }
-  if (ImGui::DragFloatRange2("f'' range", &hist_range[4], &hist_range[5],
-                             0.25f, Get2ndGradientRangeX(), Get2ndGradientRangeY(),
+  if (ImGui::DragFloatRange2("f'' range", &hist_range[4], &hist_range[5], 0.25f,
+                             volume.Get2ndGradientRangeX(),
+                             volume.Get2ndGradientRangeY(),
                              "Min: %.1f", "Max: %.1f"))
   {
     hist_render = true;

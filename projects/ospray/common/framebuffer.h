@@ -2,7 +2,7 @@
 #ifndef OSPRAY_FRAMEBUFFER_H
 #define OSPRAY_FRAMEBUFFER_H
 
-#include "common.h"
+#include "common/common.h"
 
 class Framebuffer {
 private:

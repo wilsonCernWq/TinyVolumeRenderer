@@ -1,6 +1,5 @@
 #include "common/common.h"
 #include "global.h"
-#include "volume.h"
 #include "callback.h"
 
 int main(int argc, const char **argv) {
@@ -21,15 +20,13 @@ int main(int argc, const char **argv) {
   // initialize camera and framebuffer
   camera.Init();
   framebuffer.Init(camera.CameraWidth(), camera.CameraHeight());
+  volume.Init(argc, argv);
 
   // create world and renderer
   world = ospNewModel();
-  renderer = ospNewRenderer("scivis");
-
-  // setup volume/geometry
-  transferFcn = ospNewTransferFunction("piecewise_linear_2d");
-  CreateVolume(argc, argv);
+  ospAddVolume(world, volume.OSPRayPtr());
   ospCommit(world);
+  renderer = ospNewRenderer("scivis");
 
   // lighting
   OSPLight ambient_light = ospNewLight(renderer, "AmbientLight");
