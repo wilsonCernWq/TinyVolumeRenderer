@@ -20,9 +20,10 @@
 #include <string>
 #include <iostream>
 #include <chrono>
-#include <vector>     // c++11
-#include <algorithm>  // c++11
-#include <functional> // c++11
+#include <vector>
+#include <atomic>
+#include <algorithm>
+#include <functional>
 
 //
 // threading

@@ -5,19 +5,23 @@
 #include "../reader/volume_reader.hpp"
 
 static int data_type = 0, data_size = 0;
-static void  *vData = nullptr;
-static float *gData = nullptr;
+static void *data_ptr = nullptr;
+static std::vector<float> vData;
+static std::vector<float> gData;
+static std::vector<float> aData;
 static ospcommon::vec3i data_dims(0);
 static ospcommon::vec2f vRange(std::numeric_limits<float>::max(), std::numeric_limits<float>::min());
 static ospcommon::vec2f gRange(std::numeric_limits<float>::max(), std::numeric_limits<float>::min());
+static ospcommon::vec2f aRange(std::numeric_limits<float>::max(), std::numeric_limits<float>::min());
 
 float GetValueRangeX() { return vRange.x; };
 float GetValueRangeY() { return vRange.y; };
-float GetGradientRangeX() { return gRange.x; };
-float GetGradientRangeY() { return gRange.y; };
+float Get1stGradientRangeX() { return gRange.x; };
+float Get1stGradientRangeY() { return gRange.y; };
+float Get2ndGradientRangeX() { return aRange.x; };
+float Get2ndGradientRangeY() { return aRange.y; };
 
-void UpdateTFN(const void *colors, const void *opacities, int colorW, int colorH, int opacityW, int opacityH)
-{
+void UpdateTFN(const void *colors, const void *opacities, int colorW, int colorH, int opacityW, int opacityH) {
   //! setup trasnfer function
   OSPData colorsData = ospNewData(colorW * colorH, OSP_FLOAT3, colors);
   ospCommit(colorsData);
@@ -35,95 +39,131 @@ void UpdateTFN(const void *colors, const void *opacities, int colorW, int colorH
   ospRelease(opacitiesData);
 }
 
-void UpdateHistogram(float v_lower, float v_upper, float g_lower, float g_upper)
-{
-  float hist_max = 0.f;
+void UpdateHistogram() {
+  // timer
   Timer();
-  hist.clear();
-  hist.resize(hist_xdim * hist_ydim, 0);
-  for (int x = 0; x < data_dims.x; ++x) {
-    for (int y = 0; y < data_dims.y; ++y) {
-      for (int z = 0; z < data_dims.z; ++z) {
-        const int i = z * data_dims.y * data_dims.x + y * data_dims.x + x;
-        const auto v = ReadAs<float>(vData, i, data_type);
-        const auto g = gData[i];
-        if (v >= v_lower && v <= v_upper && g >= g_lower && g <= g_upper) {
-          const auto ix = round((hist_xdim - 1) * (v - v_lower) / (v_upper - v_lower));
-          const auto iy = round((hist_ydim - 1) * (g - g_lower) / (g_upper - g_lower));
-          auto &count = hist[iy * hist_xdim + ix];
-          count += 1.f;
-          hist_max = std::max(hist_max, count);
-        }
-      }
-    }
-  }
-  tbb::parallel_for(0, hist_xdim * hist_ydim, [&](size_t k) { hist[k] /= hist_max; });
+  // setup histogram volume
+  if (histVolume != nullptr) delete[] histVolume;
+  histVolume = new std::atomic<size_t>[histXDim * histYDim * histZDim]();
+  // compute histogram
+  const float vScale = (float)(histXDim - 1) / (vRange.y - vRange.x);
+  const float gScale = (float)(histYDim - 1) / (gRange.y - gRange.x);
+  const float aScale = (float)(histZDim - 1) / (aRange.y - aRange.x);
+  tbb::parallel_for(0, (data_dims.x - 2) * (data_dims.y - 2) * (data_dims.z - 2), [&](size_t k) {
+  //for (size_t k = 0; k <  (data_dims.x - 2) * (data_dims.y - 2) * (data_dims.z - 2); ++k) {
+    const float v = vData[k];
+    const float g = gData[k];
+    const float a = aData[k];
+    const size_t ix = (size_t) round((v - vRange.x) * vScale);
+    const size_t iy = (size_t) round((g - gRange.x) * gScale);
+    const size_t iz = (size_t) round((a - aRange.x) * aScale);
+    ++histVolumeAccess(ix, iy, iz);
+  //}
+  });
+//  for (size_t k = 0; k <  histXDim * histYDim * histZDim; ++k) {
+//    size_t x = k % histXDim;
+//    size_t y = (k % (histXDim * histYDim)) / histXDim;
+//    size_t z = k / (histXDim * histYDim);
+//    std::cout << x << " " << y << " " << z << " " << histVolume[k] << std::endl;
+//  }
+  // timing
   Timer("compute histogram");
 }
 
-void CreateVolume(int argc, const char **argv)
-{
+void CreateVolume(int argc, const char **argv) {
+  //-----------------------------------------------------------------------------------------------------------------//
   // initialization
+  //-----------------------------------------------------------------------------------------------------------------//
   cleanlist.emplace_back([=]() {
-    delete[] (char *) vData;
-    delete[] gData;
+    delete[] (char *) data_ptr;
   });
 
+  //-----------------------------------------------------------------------------------------------------------------//
   // load volume
+  //-----------------------------------------------------------------------------------------------------------------//
   Timer();
-  ReadVolume(argv[1], data_type, data_size, data_dims.x, data_dims.y, data_dims.z, vData);
+  ReadVolume(argv[1], data_type, data_size, data_dims.x, data_dims.y, data_dims.z, data_ptr);
   Timer("load data");
 
+  //-----------------------------------------------------------------------------------------------------------------//
   // gradient
-  gData = new float[data_dims.x * data_dims.y * data_dims.z];
+  //-----------------------------------------------------------------------------------------------------------------//
+  vData.resize((data_dims.x - 2) * (data_dims.y - 2) * (data_dims.z - 2));
+  gData.resize((data_dims.x - 2) * (data_dims.y - 2) * (data_dims.z - 2));
+  aData.resize((data_dims.x - 2) * (data_dims.y - 2) * (data_dims.z - 2));
   Timer();
-  std::mutex lock;
   tbb::parallel_for(0, data_dims.x * data_dims.y * data_dims.z, [&](size_t k) {
     size_t x = k % data_dims.x;
     size_t y = (k % (data_dims.x * data_dims.y)) / data_dims.x;
     size_t z = k / (data_dims.x * data_dims.y);
-    auto i = z * data_dims.y * data_dims.x + y * data_dims.x + x;
-    auto v = ReadAs<float>(vData, i, data_type);
-    float idx = x == (data_dims.x - 1) ? -1 : 1;
-    float idy = y == (data_dims.y - 1) ? -data_dims.x : data_dims.x;
-    float idz = z == (data_dims.z - 1) ? -data_dims.x * data_dims.y : data_dims.x * data_dims.y;
-    auto dx = (ReadAs<float>(vData, i + idx, data_type) - v) / idx;
-    auto dy = (ReadAs<float>(vData, i + idy, data_type) - v) / idy;
-    auto dz = (ReadAs<float>(vData, i + idz, data_type) - v) / idz;
-    auto g = sqrtf(dx * dx + dy * dy + dz * dz);
-    //lock.lock();
-    //std::cout << g << std::endl;
-    //lock.unlock();
-    vRange.x = std::min(vRange.x, v);
-    vRange.y = std::max(vRange.y, v);
-    gRange.x = std::min(gRange.x, g);
-    gRange.y = std::max(gRange.y, g);
+    bool valid = true;
+    if (x == data_dims.x - 1) { valid = false; }
+    if (y == data_dims.y - 1) { valid = false; }
+    if (z == data_dims.z - 1) { valid = false; }
+    if (x == 0) { valid = false; }
+    if (y == 0) { valid = false; }
+    if (z == 0) { valid = false; }
+    if (valid) {
+      const size_t i = z * data_dims.y * data_dims.x + y * data_dims.x + x;
+      const size_t idx = 1;
+      const size_t idy = data_dims.x;
+      const size_t idz = data_dims.x * data_dims.y;
+      const float v = ReadAs<float>(data_ptr, i, data_type);
+      const float fpx = ReadAs<float>(data_ptr, i + idx, data_type);
+      const float fnx = ReadAs<float>(data_ptr, i - idx, data_type);
+      const float fpy = ReadAs<float>(data_ptr, i + idy, data_type);
+      const float fny = ReadAs<float>(data_ptr, i - idy, data_type);
+      const float fpz = ReadAs<float>(data_ptr, i + idz, data_type);
+      const float fnz = ReadAs<float>(data_ptr, i - idz, data_type);
+      float g = ospcommon::length(ospcommon::vec3f((fpx - fnx) / 2.f,
+                                                   (fpy - fny) / 2.f,
+                                                   (fpz - fnz) / 2.f));
+      float a = ospcommon::length(ospcommon::vec3f((fpx + fnx - 2.f * v),
+                                                   (fpy + fny - 2.f * v),
+                                                   (fpz + fnz - 2.f * v)));
+      const size_t new_id = (x - 1) + (y - 1) * (data_dims.x - 2) + (z - 1) * (data_dims.x - 2) * (data_dims.y - 2);
+      vData[new_id] = v;
+      gData[new_id] = g;
+      aData[new_id] = a;
+      vRange.x = std::min(vRange.x, v);
+      vRange.y = std::max(vRange.y, v);
+      gRange.x = std::min(gRange.x, g);
+      gRange.y = std::max(gRange.y, g);
+      aRange.x = std::min(aRange.x, a);
+      aRange.y = std::max(aRange.y, a);
+    }
   });
   Timer("compute gradient");
 
+  //-----------------------------------------------------------------------------------------------------------------//
   // calculate histogram
-  UpdateHistogram(vRange.x, vRange.y, gRange.x, gRange.y);
+  //-----------------------------------------------------------------------------------------------------------------//
+  UpdateHistogram();
 
+  //-----------------------------------------------------------------------------------------------------------------//
   // transfer function
-  const std::vector<ospcommon::vec3f> colors =
+  //-----------------------------------------------------------------------------------------------------------------//
+  const std::vector<float> colors =
     {
-      ospcommon::vec3f(0, 0, 0.563),
-      ospcommon::vec3f(0, 0, 1),
-      ospcommon::vec3f(0, 1, 1),
-      ospcommon::vec3f(0.5, 1, 0.5),
-      ospcommon::vec3f(1, 1, 0),
-      ospcommon::vec3f(1, 0, 0),
-      ospcommon::vec3f(0.5, 0, 0),
+      0, 0, 0.563,
+      0, 0, 1,
+      0, 1, 1,
+      0.5, 1, 0.5,
+      1, 1, 0,
+      1, 0, 0,
+      0.5, 0, 0,
     };
-  const std::vector<float> opacities = {0.5f, 0.5f, 0.5f, 0.5f, 0.0f, 0.0f};
-  UpdateTFN(colors.data(), opacities.data(), colors.size(), 1, opacities.size(), 1);
+  const std::vector<float> opacities = {1.0f, 0.8f, 0.6f, 0.4f, 0.2f, 0.0f};
+  UpdateTFN(colors.data(), opacities.data(), colors.size() / 3, 1, opacities.size(), 1);
 
+  //-----------------------------------------------------------------------------------------------------------------//
   // create ospray volume
+  //-----------------------------------------------------------------------------------------------------------------//
   Timer();
   {
     OSPVolume volume = ospNewVolume("shared_structured_volume");
     OSPData voxelData = ospNewData(data_dims.x * data_dims.y * data_dims.z * data_size, OSP_UCHAR,
-                                   vData, OSP_DATA_SHARED_BUFFER);
+                                   data_ptr, OSP_DATA_SHARED_BUFFER);
     cleanlist.push_back([=]() {
       ospRelease(volume);
       ospRelease(voxelData);

@@ -23,8 +23,11 @@ extern OSPRenderer renderer;
 extern OSPTransferFunction transferFcn;
 
 // histogram
-extern std::vector<float> hist;
-extern const int hist_xdim, hist_ydim;
+extern const size_t histXDim, histYDim, histZDim;
+extern std::atomic<size_t>* histVolume;
+inline std::atomic<size_t>& histVolumeAccess(size_t x, size_t y, size_t z) {
+  return histVolume[z * histYDim * histXDim + y * histXDim + x];
+}
 
 // cleaning
 extern std::vector<std::function<void()>> cleanlist;

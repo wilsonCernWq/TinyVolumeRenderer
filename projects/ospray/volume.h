@@ -7,10 +7,11 @@
 
 float GetValueRangeX();
 float GetValueRangeY();
-float GetGradientRangeX();
-float GetGradientRangeY();
+float Get1stGradientRangeX();
+float Get1stGradientRangeY();
+float Get2ndGradientRangeX();
+float Get2ndGradientRangeY();
 void UpdateTFN(const void *colors, const void *opacities, int colorW, int colorH, int opacityW, int opacityH);
-void UpdateHistogram(float v_lower, float v_upper, float g_lower, float g_upper);
 void CreateVolume(int argc, const char **argv);
 
 #endif //OSPRAY_VOLUME_H

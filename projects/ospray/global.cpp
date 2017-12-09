@@ -17,10 +17,11 @@ OSPRenderer renderer = nullptr;
 // transfer function
 OSPTransferFunction transferFcn = nullptr;
 
-std::vector<float> hist;
-const int hist_xdim = 16, hist_ydim = 16;
+// histogram
+std::atomic<size_t>* histVolume = nullptr;
+const size_t histXDim = 64, histYDim = 64, histZDim = 64;
 
-//! cleaning
+// cleaning
 std::vector<std::function<void()>> cleanlist;
 void Clean() {
   std::cout << "[clean] start cleaning" << std::endl;
