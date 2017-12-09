@@ -18,8 +18,9 @@ OSPRenderer renderer = nullptr;
 OSPTransferFunction transferFcn = nullptr;
 
 // histogram
-std::atomic<size_t>* histVolume = nullptr;
 const size_t histXDim = 64, histYDim = 64, histZDim = 64;
+const size_t histCount = histXDim * histYDim * histZDim;
+std::atomic<size_t>* histVolume = nullptr;
 
 // cleaning
 std::vector<std::function<void()>> cleanlist;

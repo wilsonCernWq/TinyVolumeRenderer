@@ -5,7 +5,7 @@
 #ifndef OSPRAY_CALLBACK_H
 #define OSPRAY_CALLBACK_H
 
-#include "common.h"
+#include "common/common.h"
 
 void RenderWindow(GLFWwindow *window);
 

@@ -5,9 +5,9 @@
 #ifndef OSPRAY_GLOBAL_H
 #define OSPRAY_GLOBAL_H
 
-#include "common.h"
-#include "camera.h"
-#include "framebuffer.h"
+#include "common/common.h"
+#include "common/camera.h"
+#include "common/framebuffer.h"
 
 // camera
 extern Camera camera;
@@ -23,11 +23,9 @@ extern OSPRenderer renderer;
 extern OSPTransferFunction transferFcn;
 
 // histogram
-extern const size_t histXDim, histYDim, histZDim;
+extern const size_t histXDim, histYDim, histZDim, histCount;
 extern std::atomic<size_t>* histVolume;
-inline std::atomic<size_t>& histVolumeAccess(size_t x, size_t y, size_t z) {
-  return histVolume[z * histYDim * histXDim + y * histXDim + x];
-}
+inline size_t histIdx(size_t x, size_t y, size_t z) { return z * histYDim * histXDim + y * histXDim + x; }
 
 // cleaning
 extern std::vector<std::function<void()>> cleanlist;

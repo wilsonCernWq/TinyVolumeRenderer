@@ -1,7 +1,10 @@
 <component name="ProjectDictionaryState">
   <dictionary name="qwu">
     <words>
+      <w>framebuffer</w>
+      <w>glfw</w>
       <w>histgram</w>
+      <w>opengl</w>
     </words>
   </dictionary>
 </component>

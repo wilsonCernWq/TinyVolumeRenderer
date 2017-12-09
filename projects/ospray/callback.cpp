@@ -32,20 +32,14 @@ void StartOSPRay() {
   osprayStop = false;
   osprayThread = new std::thread([=] {
     while (!osprayStop) {
-      if (osprayClear) {
-        framebuffer.CleanBuffer();
-        osprayClear = false;
-      }
+      if (osprayClear) { framebuffer.CleanBuffer();osprayClear = false; }
       ospRenderFrame(framebuffer.OSPRayPtr(), renderer, OSP_FB_COLOR | OSP_FB_ACCUM);
       framebuffer.Swap();
     }
   });
 }
 
-void StopOSPRay() {
-  osprayStop = true;
-  osprayThread->join();
-}
+void StopOSPRay() { osprayStop = true; osprayThread->join(); }
 
 bool ClearOSPRay() { osprayClear = true; }
 

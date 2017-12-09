@@ -55,7 +55,7 @@ public:
   }
 
   void Swap() {
-    uint8_t process_idx = frame_idx == 0 ? uint8_t(1) : uint8_t(0);
+    uint8_t process_idx = (frame_idx == 0) ? uint8_t(1) : uint8_t(0);
     std::copy(mapped_ptr, mapped_ptr + W * H, frame_data[process_idx].data());
     frame_idx = process_idx;
   }

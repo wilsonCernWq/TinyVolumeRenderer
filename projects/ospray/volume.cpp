@@ -1,6 +1,6 @@
 #include <limits>
 #include <mutex>
-#include "common.h"
+#include "common/common.h"
 #include "global.h"
 #include "../reader/volume_reader.hpp"
 
@@ -44,7 +44,7 @@ void UpdateHistogram() {
   Timer();
   // setup histogram volume
   if (histVolume != nullptr) delete[] histVolume;
-  histVolume = new std::atomic<size_t>[histXDim * histYDim * histZDim]();
+  histVolume = new std::atomic<size_t>[histCount]();
   // compute histogram
   const float vScale = (float)(histXDim - 1) / (vRange.y - vRange.x);
   const float gScale = (float)(histYDim - 1) / (gRange.y - gRange.x);
@@ -53,10 +53,10 @@ void UpdateHistogram() {
     const float v = vData[k];
     const float g = gData[k];
     const float a = aData[k];
-    const size_t ix = (size_t) round((v - vRange.x) * vScale);
-    const size_t iy = (size_t) round((g - gRange.x) * gScale);
-    const size_t iz = (size_t) round((a - aRange.x) * aScale);
-    ++histVolumeAccess(ix, iy, iz);
+    const auto ix = (size_t) round((v - vRange.x) * vScale);
+    const auto iy = (size_t) round((g - gRange.x) * gScale);
+    const auto iz = (size_t) round((a - aRange.x) * aScale);
+    ++histVolume[histIdx(ix, iy, iz)];
   });
   // timing
   Timer("compute histogram");
@@ -100,19 +100,23 @@ void CreateVolume(int argc, const char **argv) {
       const size_t idx = 1;
       const size_t idy = data_dims.x;
       const size_t idz = data_dims.x * data_dims.y;
-      const float v = ReadAs<float>(data_ptr, i, data_type);
-      const float fpx = ReadAs<float>(data_ptr, i + idx, data_type);
-      const float fnx = ReadAs<float>(data_ptr, i - idx, data_type);
-      const float fpy = ReadAs<float>(data_ptr, i + idy, data_type);
-      const float fny = ReadAs<float>(data_ptr, i - idy, data_type);
-      const float fpz = ReadAs<float>(data_ptr, i + idz, data_type);
-      const float fnz = ReadAs<float>(data_ptr, i - idz, data_type);
+      const auto v = ReadAs<float>(data_ptr, i, data_type);
+      const auto fpx = ReadAs<float>(data_ptr, i + idx, data_type);
+      const auto fnx = ReadAs<float>(data_ptr, i - idx, data_type);
+      const auto fpy = ReadAs<float>(data_ptr, i + idy, data_type);
+      const auto fny = ReadAs<float>(data_ptr, i - idy, data_type);
+      const auto fpz = ReadAs<float>(data_ptr, i + idz, data_type);
+      const auto fnz = ReadAs<float>(data_ptr, i - idz, data_type);
       float g = ospcommon::length(ospcommon::vec3f((fpx - fnx) / 2.f,
                                                    (fpy - fny) / 2.f,
                                                    (fpz - fnz) / 2.f));
-      float a = ospcommon::length(ospcommon::vec3f((fpx + fnx - 2.f * v),
-                                                   (fpy + fny - 2.f * v),
-                                                   (fpz + fnz - 2.f * v)));
+      float a =
+        ospcommon::length(ospcommon::vec3f(fpx - v,
+                                           fpy - v,
+                                           fpz - v)) -
+        ospcommon::length(ospcommon::vec3f(v - fnx,
+                                           v - fny,
+                                           v - fnz));
       const size_t new_id = (x - 1) + (y - 1) * (data_dims.x - 2) + (z - 1) * (data_dims.x - 2) * (data_dims.y - 2);
       vData[new_id] = v;
       gData[new_id] = g;
@@ -164,12 +168,12 @@ void CreateVolume(int argc, const char **argv) {
     ospSetVec3i(volume, "dimensions", (osp::vec3i &) data_dims);
     ospSetVec3f(volume, "gridOrigin", osp::vec3f{-1.0f, -1.0f, -1.0f});
     ospSetVec3f(volume, "gridSpacing", osp::vec3f{2.f / data_dims.x, 2.f / data_dims.y, 2.f / data_dims.z});
-    ospSet1f(volume, "samplingRate", 5.0f);
-    ospSet1i(volume, "adaptiveSampling", 1);
-    ospSet1i(volume, "gradientShadingEnabled", 0);
-    ospSet1i(volume, "useGridAccelerator", 0);
-    ospSet1i(volume, "preIntegration", 0);
-    ospSet1i(volume, "singleShade", 0);
+    ospSet1f(volume, "samplingRate", 0.125f);
+    ospSet1f(volume, "adaptiveMaxSamplingRate", 1.f);
+    ospSet1i(volume, "adaptiveSampling", true);
+    ospSet1i(volume, "gradientShadingEnabled", true);
+    ospSet1i(volume, "preIntegration", false);
+    ospSet1i(volume, "singleShade", false);
     ospSetData(volume, "voxelData", voxelData);
     ospSetObject(volume, "transferFunction", transferFcn);
     ospCommit(volume);

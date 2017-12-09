@@ -15,7 +15,7 @@ private:
   float aspect = (float) width / height;
   float zNear = 1.f, zFar = 50.f;
   float fovy = 30.f;
-  glm::vec3 eye = glm::vec3(0.f, 0.f, -5.f); // this trackball requires camera to be
+  glm::vec3 eye = glm::vec3(0.f, 0.f, -15.f); // this trackball requires camera to be
   glm::vec3 focus = glm::vec3(0.f);           // initialized on negtive z axis with
   glm::vec3 up = glm::vec3(0.f, 1.f, 0.f);   // y axis as the initial up vector !!!!
   Trackball ball;

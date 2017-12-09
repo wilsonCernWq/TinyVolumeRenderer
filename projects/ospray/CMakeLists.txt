@@ -28,8 +28,8 @@ add_executable(viewer_ospray
   widget.cpp widget.h
   global.cpp global.h
   volume.cpp volume.h
-  camera.h framebuffer.h
-  trackball.h common.h
+  common/camera.h common/framebuffer.h
+  common/trackball.h common/common.h
   ${TFN_MODULE_SRC})
 target_link_libraries(viewer_ospray volume_reader ${COMMON_LIBS})
 set_target_properties(viewer_ospray
