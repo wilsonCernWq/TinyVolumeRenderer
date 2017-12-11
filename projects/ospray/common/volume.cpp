@@ -63,13 +63,13 @@ void Volume::ComputeGradients() {
       const auto fny = ReadAs<float>(data_ptr, i - idy, data_type);
       const auto fpz = ReadAs<float>(data_ptr, i + idz, data_type);
       const auto fnz = ReadAs<float>(data_ptr, i - idz, data_type);
-      float g = ospcommon::length(ospcommon::vec3f((fpx - fnx) * data_dims.x / 4.f,
-                                                   (fpy - fny) * data_dims.y / 4.f,
-                                                   (fpz - fnz) * data_dims.z / 4.f));
+      float g = ospcommon::length(ospcommon::vec3f((fpx - fnx) / 2.f / data_spacing,
+                                                   (fpy - fny) / 2.f / data_spacing,
+                                                   (fpz - fnz) / 2.f / data_spacing));
       float a =
-          (fpx + fnx - 2.f * v) * (data_dims.x * data_dims.x / 4.f) +
-          (fpy + fny - 2.f * v) * (data_dims.y * data_dims.y / 4.f) +
-          (fpz + fnz - 2.f * v) * (data_dims.z * data_dims.z / 4.f);
+          (fpx + fnx - 2.f * v) / (data_spacing * data_spacing) +
+          (fpy + fny - 2.f * v) / (data_spacing * data_spacing) +
+          (fpz + fnz - 2.f * v) / (data_spacing * data_spacing);
       const size_t new_id = (x - 1) + (y - 1) * (data_dims.x - 2) + (z - 1) * (data_dims.x - 2) * (data_dims.y - 2);
       vData[new_id] = v;
       gData[new_id] = g;
@@ -93,23 +93,9 @@ void Volume::Init(int argc, const char **argv) {
   int _size, _dimx, _dimy, _dimz;
   ReadVolume(argv[1], data_type, _size, _dimx, _dimy, _dimz, data_ptr);
   data_size = size_t(_size); data_dims = vec3s(_dimx, _dimy, _dimz);
+  data_spacing = std::min(2.f / data_dims.z, std::min(2.f / data_dims.x, 2.f / data_dims.y));
   Timer("load data");
 
-//  data_dims = vec3s(100,100,100);
-//  unsigned char* d = new unsigned char[data_dims.x * data_dims.y * data_dims.z];
-//  float s = 10.f;
-//  for (int x = 0; x < data_dims.x; ++x) {
-//    for (int y = 0; y < data_dims.y; ++y) {
-//      for (int z = 0; z < data_dims.z; ++z) {
-//        float r = sqrtf(x * x + y * y + z * z) / sqrtf(data_dims.x * data_dims.x + data_dims.y * data_dims.y + data_dims.z * data_dims.z);
-//        r = (r - 0.5f);
-//        unsigned char c = round(r > 0.f ? 127 + 128 * (1.f - exp(-s * r)): 128 * exp(s * r));
-//        d[z * data_dims.x * data_dims.y + y * data_dims.x + x] = c;
-//      }
-//    }
-//  }
-//  data_ptr = d;
-//  data_type = UCHAR;
   //-----------------------------------------------------------------------------------------------------------------//
   // gradient
   //-----------------------------------------------------------------------------------------------------------------//
@@ -130,14 +116,13 @@ void Volume::Init(int argc, const char **argv) {
   //-----------------------------------------------------------------------------------------------------------------//
   Timer();
   {
-    ospVolume = ospNewVolume("visit_shared_structured_volume");
+    ospVolume = ospNewVolume("shared_structured_volume");
     ospVoxelData = ospNewData(data_size, OSP_UCHAR, data_ptr, OSP_DATA_SHARED_BUFFER);
     ospSetVec3i(ospVolume, "dimensions", osp::vec3i{(int)data_dims.x, (int)data_dims.y, (int)data_dims.z});
-    ospSetVec3f(ospVolume, "gridOrigin", osp::vec3f{-1.0f, -1.0f, -1.0f});
-    ospSetVec3f(ospVolume, "gridSpacing", osp::vec3f{2.f / data_dims.x, 2.f / data_dims.y, 2.f / data_dims.z});
-    //ospSetVec3f(ospVolume, "volumeGlobalBoundingBoxLower", osp::vec3f{-1.0f,-1.0f,-1.0f});
-    //ospSetVec3f(ospVolume, "volumeGlobalBoundingBoxUpper", osp::vec3f{ 1.0f, 1.0f, 1.0f});
-    //ospSet1i(ospVolume, "useGridAccelerator", false);
+    ospSetVec3f(ospVolume, "gridOrigin", osp::vec3f{-0.5f * data_spacing * data_dims.x,
+                                                    -0.5f * data_spacing * data_dims.y,
+                                                    -0.5f * data_spacing * data_dims.z});
+    ospSetVec3f(ospVolume, "gridSpacing", osp::vec3f{data_spacing, data_spacing, data_spacing});
     ospSet1i(ospVolume, "adaptiveSampling", true);
     ospSet1i(ospVolume, "gradientShadingEnabled", true);
     ospSet1i(ospVolume, "preIntegration", false);

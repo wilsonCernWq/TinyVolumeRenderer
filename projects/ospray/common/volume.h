@@ -49,6 +49,7 @@ private:
   int data_type = 0;
   size_t data_size = 0;
   vec3s data_dims = vec3s(0);
+  float data_spacing = 1.f;
 
   std::vector<float> vData;
   std::vector<float> gData;
