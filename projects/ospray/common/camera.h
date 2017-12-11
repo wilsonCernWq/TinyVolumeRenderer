@@ -30,7 +30,8 @@ public:
     }
   }
 
-  void Init() {
+  void Init(float scale) {
+    eye.z *= scale;
     ospCamera = ospNewCamera("perspective");
     CameraUpdateView();
     CameraUpdateProj(this->width, this->height);

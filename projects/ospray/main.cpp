@@ -19,9 +19,9 @@ int main(int argc, const char **argv) {
   ospLoadModule("tfn");
 
   // initialize camera and framebuffer
-  camera.Init();
-  framebuffer.Init(camera.CameraWidth(), camera.CameraHeight());
   volume.Init(argc, argv);
+  camera.Init(volume.GetScale());
+  framebuffer.Init(camera.CameraWidth(), camera.CameraHeight());
 
   // create world and renderer
   world = ospNewModel();

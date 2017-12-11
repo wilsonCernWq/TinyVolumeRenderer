@@ -33,7 +33,8 @@ static std::vector<float> array1d_opacity;
 static std::vector<float> array2d_opacity;
 
 static float g_threshold = 0.f;
-static float sigma = 0.005f;
+static float r_sigma = 0.5f;
+static float sigma = r_sigma;
 
 //------------------------------------------------------------------------------------------------//
 template<typename T> T clamp(T v, T l, T u) { return std::min(u, std::max(l, v)); }
@@ -50,6 +51,7 @@ float OpacityFunction(float x)
 }
 void GenerateClassification()
 {
+  sigma = r_sigma * volume.GetSpacing();
   array1d_opacity.resize(volume.GetHistogram().HistXDim());
   {
     tbb::parallel_for(size_t(0), volume.GetHistogram().HistXDim(), [&](size_t ix) {
@@ -306,7 +308,7 @@ void DrawTransferFunction()
     tfn_opacity_data.clear();
     return;
   }
-  if (ImGui::SliderFloat("sigma", &sigma, 0.0001f, 1.0000f, "%.4f"))
+  if (ImGui::SliderFloat("sigma", &r_sigma, 0.0001f, 2.0000f, "%.4f"))
   {
     array_render = true;
   }

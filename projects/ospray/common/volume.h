@@ -64,15 +64,16 @@ public:
   OSPVolume OSPRayPtr() { return ospVolume; }
   Transferfunction& GetTransferFunction() { return tfn; }
   const HistVolume& GetHistogram() { return histogram; }
-  Volume() : histogram(64, 64, 64)
-  {
-    vRange = glm::vec2(std::numeric_limits<float>::max(), std::numeric_limits<float>::min());
-    gRange = glm::vec2(std::numeric_limits<float>::max(), std::numeric_limits<float>::min());
-    aRange = glm::vec2(std::numeric_limits<float>::max(), std::numeric_limits<float>::min());
-  }
+  Volume() : histogram(64, 64, 64),
+             vRange(std::numeric_limits<float>::max(), std::numeric_limits<float>::min()),
+             gRange(std::numeric_limits<float>::max(), std::numeric_limits<float>::min()),
+             aRange(std::numeric_limits<float>::max(), std::numeric_limits<float>::min())
+  {}
   ~Volume() { Clean(); }
   void Clean();
   void Init(int argc, const char **argv);
+  float GetSpacing() { return data_spacing; };
+  float GetScale() { return std::max(std::max(data_dims.x, data_dims.y), data_dims.z); }
   float GetValueRangeX() { return vRange.x; };
   float GetValueRangeY() { return vRange.y; };
   float Get1stGradientRangeX() { return gRange.x; };

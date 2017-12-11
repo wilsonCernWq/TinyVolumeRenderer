@@ -1,5 +1,6 @@
 #include "volume.h"
 #include "../../reader/volume_reader.hpp"
+#include <mutex>
 
 Volume::HistVolume::HistVolume(size_t x, size_t y, size_t z)
   : histXDim(x), histYDim(y), histZDim(z), histCount(histXDim * histYDim * histZDim) {};
@@ -40,6 +41,7 @@ void Volume::ComputeGradients() {
   gData.resize((data_dims.x - 2) * (data_dims.y - 2) * (data_dims.z - 2));
   aData.resize((data_dims.x - 2) * (data_dims.y - 2) * (data_dims.z - 2));
   Timer();
+  std::mutex guard;
   tbb::parallel_for(size_t(0), data_dims.x * data_dims.y * data_dims.z, [&](size_t k) {
     size_t x = k % data_dims.x;
     size_t y = (k % (data_dims.x * data_dims.y)) / data_dims.x;
@@ -56,13 +58,13 @@ void Volume::ComputeGradients() {
       const size_t idx = 1;
       const size_t idy = data_dims.x;
       const size_t idz = data_dims.x * data_dims.y;
-      const auto v = ReadAs<float>(data_ptr, i, data_type);
-      const auto fpx = ReadAs<float>(data_ptr, i + idx, data_type);
-      const auto fnx = ReadAs<float>(data_ptr, i - idx, data_type);
-      const auto fpy = ReadAs<float>(data_ptr, i + idy, data_type);
-      const auto fny = ReadAs<float>(data_ptr, i - idy, data_type);
-      const auto fpz = ReadAs<float>(data_ptr, i + idz, data_type);
-      const auto fnz = ReadAs<float>(data_ptr, i - idz, data_type);
+      const auto v = ReadAs<float>(data_ptr, (int)i, data_type);
+      const auto fpx = ReadAs<float>(data_ptr, (int)(i + idx), data_type);
+      const auto fnx = ReadAs<float>(data_ptr, (int)(i - idx), data_type);
+      const auto fpy = ReadAs<float>(data_ptr, (int)(i + idy), data_type);
+      const auto fny = ReadAs<float>(data_ptr, (int)(i - idy), data_type);
+      const auto fpz = ReadAs<float>(data_ptr, (int)(i + idz), data_type);
+      const auto fnz = ReadAs<float>(data_ptr, (int)(i - idz), data_type);
       float g = ospcommon::length(ospcommon::vec3f((fpx - fnx) / 2.f / data_spacing,
                                                    (fpy - fny) / 2.f / data_spacing,
                                                    (fpz - fnz) / 2.f / data_spacing));
@@ -74,14 +76,28 @@ void Volume::ComputeGradients() {
       vData[new_id] = v;
       gData[new_id] = g;
       aData[new_id] = a;
-      vRange.x = std::min(vRange.x, v);
-      vRange.y = std::max(vRange.y, v);
-      gRange.x = std::min(gRange.x, g);
-      gRange.y = std::max(gRange.y, g);
-      aRange.x = std::min(aRange.x, a);
-      aRange.y = std::max(aRange.y, a);
     }
   });
+  const auto block_start = size_t(0);
+  const auto block_end = (data_dims.x - 2) * (data_dims.y - 2) * (data_dims.z - 2);
+  tbb::parallel_reduce(tbb::blocked_range<size_t>(block_start, block_end,
+    [&](size_t k)
+    {
+    const float v = vData[k];
+    const float g = gData[k];
+    const float a = aData[k];
+    vRange.x = std::min(vRange.x, v);
+    vRange.y = std::max(vRange.y, v);
+    gRange.x = std::min(gRange.x, g);
+    gRange.y = std::max(gRange.y, g);
+    aRange.x = std::min(aRange.x, a);
+    aRange.y = std::max(aRange.y, a);
+    if (a < aRange.x) {
+      std::cout << "xx" << std::endl;
+    }
+  },
+  [&]());
+
   Timer("compute gradient");
 }
 
@@ -93,7 +109,8 @@ void Volume::Init(int argc, const char **argv) {
   int _size, _dimx, _dimy, _dimz;
   ReadVolume(argv[1], data_type, _size, _dimx, _dimy, _dimz, data_ptr);
   data_size = size_t(_size); data_dims = vec3s(_dimx, _dimy, _dimz);
-  data_spacing = std::min(2.f / data_dims.z, std::min(2.f / data_dims.x, 2.f / data_dims.y));
+  //data_spacing = std::min(2.f / data_dims.z, std::min(2.f / data_dims.x, 2.f / data_dims.y));
+  data_spacing = 1.f;
   Timer("load data");
 
   //-----------------------------------------------------------------------------------------------------------------//
