@@ -22,13 +22,14 @@ static float  hist_range[6] = {0.f}; // histogram value range
 //
 //------------------------------------------------------------------------------------------------//
 static bool array_render = true;
+static GLuint array_tex = 0;
 static vec2f array1d_range;
 static vec2f array2d_range;
 static std::vector<float> array1d_p;
 static std::vector<float> array2d_p;
 
 static float g_threshold = 0.f;
-static float sigma = 1.f;
+static float sigma = 0.001f;
 
 //------------------------------------------------------------------------------------------------//
 template<typename T> T clamp(T v, T l, T u) { return std::min(u, std::max(l, v)); }
@@ -62,14 +63,18 @@ void GenerateClassification()
       }
       ag /= n;
       aa /= n;
-      array1d_p[ix] = OpacityFunction(sigma * sigma * aa / (std::max(ag - g_threshold, 0.f)));
+      if (ag < g_threshold) {
+        array2d_p[ix] = 0.f;
+      } else {
+        array1d_p[ix] = OpacityFunction(-sigma * sigma * aa / (std::max(ag - g_threshold, 0.f)));
+      }
       array1d_range.x = std::min(array1d_p[ix], array1d_range.x);
       array1d_range.y = std::max(array1d_p[ix], array1d_range.y);
     });
   }
   array2d_p.resize(volume.GetHistogram().HistCountXY());
   {
-    for (size_t k = 0; k < volume.GetHistogram().HistCountXY(); ++k) {
+    tbb::parallel_for(size_t(0), volume.GetHistogram().HistCountXY(), [&](size_t k) {
       const size_t ix = k % volume.GetHistogram().HistXDim();
       const size_t iy = k / volume.GetHistogram().HistXDim();
       const float g = volume.SampleHistY(iy);
@@ -82,10 +87,14 @@ void GenerateClassification()
         n += m;
       }
       aa /= n;
-      array2d_p[k] = OpacityFunction(sigma * sigma * aa / (std::max(g - g_threshold, 0.f)));
+      if (g < g_threshold) {
+        array2d_p[k] = 0.f;
+      } else {
+        array2d_p[k] = OpacityFunction(-sigma * sigma * aa / (std::max(g - g_threshold, 0.f)));
+      }
       array2d_range.x = std::min(array2d_p[k], array2d_range.x);
       array2d_range.y = std::max(array2d_p[k], array2d_range.y);
-    }
+    });
   }
   const std::vector<float> colors =
     {
@@ -99,7 +108,12 @@ void GenerateClassification()
       0.75f, 0.25f, 0.00f,
       1.00f, 0.00f, 0.00f,
     };
-  volume.GetTransferFunction().Update(colors.data(), array1d_p.data(), colors.size() / 3, 1, array1d_p.size(), 1);
+//  volume.GetTransferFunction().Update(colors.data(), array1d_p.data(),
+//                                      (int)colors.size() / 3, 1,
+//                                      (int)array1d_p.size(), 1);
+  volume.GetTransferFunction().Update(colors.data(), array2d_p.data(),
+                                      colors.size() / 3, 1,
+                                      volume.GetHistogram().HistXDim(), volume.GetHistogram().HistYDim());
   ClearOSPRay();
 }
 //------------------------------------------------------------------------------------------------//
@@ -121,13 +135,13 @@ void RenderTFNTexture(GLuint &tex, const std::vector <size_t>& counts,
                       size_t width, size_t height, float upper, float gamma)
 {
   std::vector <uint8_t> tex_data(width * height * 3);
-  for (int k = 0; k < width * height; ++k) {
+  tbb::parallel_for(size_t(0), width * height, [&](size_t k) {
     const float ratio = std::pow(clamp(static_cast<float>(counts[k]) / upper, 0.f, 1.f), gamma);
     const auto value = static_cast<uint8_t>(255 * ratio);
     tex_data[3 * k + 0] = value;
     tex_data[3 * k + 1] = value;
     tex_data[3 * k + 2] = value;
-  }
+  });
   glBindTexture(GL_TEXTURE_2D, tex);
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, (GLuint) width, (GLuint) height, 0, GL_RGB, GL_UNSIGNED_BYTE,
                static_cast<const void *>(tex_data.data()));
@@ -148,7 +162,7 @@ void RenderTFN() {
     {
       std::vector <size_t> hist_count(volume.GetHistogram().HistCountXY(),0);
       size_t hist_max(0);
-      for (int k = 0; k < volume.GetHistogram().HistCountXY(); ++k) {
+      tbb::parallel_for(size_t(0), volume.GetHistogram().HistCountXY(), [&] (size_t k) {
         const size_t ix = k % volume.GetHistogram().HistXDim();
         const size_t iy = k / volume.GetHistogram().HistXDim();
         const float v = volume.SampleHistX(ix);
@@ -162,7 +176,7 @@ void RenderTFN() {
           hist_max = std::max(hist_max, count);
         }
         hist_count[k] = count;
-      }
+      });
       RenderTFNTexture(hist_tex[0], hist_count,
                        volume.GetHistogram().HistXDim(),
                        volume.GetHistogram().HistYDim(),
@@ -172,7 +186,7 @@ void RenderTFN() {
     {
       std::vector <size_t> hist_count(volume.GetHistogram().HistCountXZ(), 0);
       size_t hist_max(0);
-      for (int k = 0; k < volume.GetHistogram().HistCountXZ(); ++k) {
+      tbb::parallel_for(size_t(0), volume.GetHistogram().HistCountXZ(), [&] (size_t k) {
         const size_t ix = k % volume.GetHistogram().HistXDim();
         const size_t iz = k / volume.GetHistogram().HistXDim();
         const float v = volume.SampleHistX(ix);
@@ -186,7 +200,7 @@ void RenderTFN() {
           hist_max = std::max(hist_max, count);
         }
         hist_count[k] = count;
-      }
+      });
       RenderTFNTexture(hist_tex[1], hist_count,
                        volume.GetHistogram().HistXDim(),
                        volume.GetHistogram().HistZDim(),
@@ -198,6 +212,20 @@ void RenderTFN() {
   if (array_render)
   {
     GenerateClassification();
+    if (array_tex == 0) { CreateTFNTexture(array_tex, volume.GetHistogram().HistXDim(), volume.GetHistogram().HistYDim()); }
+    std::vector <uint8_t> tmp_data(volume.GetHistogram().HistCountXY() * 3);
+    tbb::parallel_for(size_t(0), volume.GetHistogram().HistCountXY(), [&](size_t k) {
+      const auto value = static_cast<uint8_t>(255 * array2d_p[k]);
+      tmp_data[3 * k + 0] = value;
+      tmp_data[3 * k + 1] = value;
+      tmp_data[3 * k + 2] = value;
+    });
+    glBindTexture(GL_TEXTURE_2D, array_tex);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8,
+                 (GLuint) volume.GetHistogram().HistXDim(),
+                 (GLuint) volume.GetHistogram().HistYDim(),
+                 0, GL_RGB, GL_UNSIGNED_BYTE,
+                 static_cast<const void *>(tmp_data.data()));
     array_render = false;
   }
 }
@@ -278,7 +306,7 @@ void DrawTransferFunction()
     ImGui::End();
     return;
   }
-  if (ImGui::SliderFloat("sigma", &sigma, 0.f, 100.f, "%.4f"))
+  if (ImGui::SliderFloat("sigma", &sigma, 0.f, 1.f, "%.4f"))
   {
     array_render = true;
   }
@@ -303,7 +331,7 @@ void DrawTransferFunction()
   {
     canvas_y += margin;
     const float scale = 1.f / std::max(std::abs(array1d_range.y), std::abs(array1d_range.x));
-    const float width  = (canvas_avail_x - margin) / 2.f - 1;
+    const float width  = canvas_avail_x - margin;
     const float height = 40.f;
     const float offset_x = canvas_x;
     const float offset_y = canvas_y + height;
@@ -321,13 +349,19 @@ void DrawTransferFunction()
       const float y0 = array1d_p[i  ] * scale;
       const float x1 = (float)(i+1) / (array1d_p.size() - 1);
       const float y1 = array1d_p[i+1] * scale;
-      polyline.emplace_back(offset_x + x0 * width,     offset_y);
-      polyline.emplace_back(offset_x + x0 * width,     offset_y - y0 * height);
-      polyline.emplace_back(offset_x + x1 * width + 1, offset_y - y1 * height);
-      polyline.emplace_back(offset_x + x1 * width + 1, offset_y);
-      draw_list->AddConvexPolyFilled(polyline.data(), (int)polyline.size(), 0x1FD8D8D8, true);
+      polyline.emplace_back(offset_x + x0 * width, offset_y);
+      polyline.emplace_back(offset_x + x0 * width, offset_y - y0 * height);
+      polyline.emplace_back(offset_x + x1 * width, offset_y - y1 * height);
+      polyline.emplace_back(offset_x + x1 * width, offset_y);
+      draw_list->AddConvexPolyFilled(polyline.data(), (int)polyline.size(), 0x99D8D8D8, true);
     }
     canvas_y += height * 2.f;
+  }
+  {
+    canvas_y += margin;
+    const float width  = canvas_avail_x - margin - 1;
+    ImGui::SetCursorScreenPos(ImVec2(canvas_x, canvas_y));
+    ImGui::Image(reinterpret_cast<void *>(array_tex), ImVec2(width,width));
   }
   ImGui::End();
 }

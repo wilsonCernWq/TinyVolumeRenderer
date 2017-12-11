@@ -4,8 +4,9 @@
 
 #include "transferfunction.h"
 
-void Transferfunction::Init(const glm::vec2& r) {
-  range = r;
+void Transferfunction::Init(const glm::vec2& vr, const glm::vec2& gr) {
+  vrange = vr;
+  grange = gr;
   ospTfn = ospNewTransferFunction("piecewise_linear_2d");
   const std::vector<float> colors =
     {
@@ -33,7 +34,8 @@ void Transferfunction::Update(const void *colors,
   ospCommit(opacitiesData);
   ospSetData(ospTfn, "colors", colorsData);
   ospSetData(ospTfn, "opacities", opacitiesData);
-  ospSetVec2f(ospTfn, "valueRange", osp::vec2f{range.x, range.y});
+  ospSetVec2f(ospTfn, "valueRange", osp::vec2f{vrange.x, vrange.y});
+  ospSetVec2f(ospTfn, "gradRange", osp::vec2f{grange.x, grange.y});
   ospSet1i(ospTfn, "colorWidth", colorW);
   ospSet1i(ospTfn, "colorHeight", colorH);
   ospSet1i(ospTfn, "opacityWidth", opacityW);

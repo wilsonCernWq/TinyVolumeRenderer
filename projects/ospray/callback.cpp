@@ -67,7 +67,7 @@ void RenderWindow(GLFWwindow *window)
        [&](const std::vector<float> &c, const std::vector<float> &a) {
          std::vector<float> o(a.size() / 2);
          for (size_t i = 0; i < a.size() / 2; ++i) { o[i] = a[2 * i + 1]; }
-         volume.GetTransferFunction().Update(c.data(), o.data(), c.size() / 3, 1, o.size(), 1);
+         volume.GetTransferFunction().Update(c.data(), o.data(), (int)c.size() / 3, 1, (int)o.size(), 1);
          ClearOSPRay();
        });
 #endif
