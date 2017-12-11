@@ -5,7 +5,6 @@
 #include "global.h"
 #include "widget.h"
 
-#include <thread>
 #include <imgui.h>
 #include <imgui_impl_glfw_gl3.h>
 
@@ -18,27 +17,6 @@
 #ifdef USE_TFN_MODULE
 static std::shared_ptr<tfn::tfn_widget::TransferFunctionWidget> tfnWidget;
 #endif
-
-//-------------------------------------------------------------------------------------------------------------//
-
-static std::thread *osprayThread = nullptr;
-static std::atomic<bool> osprayStop(false);
-static std::atomic<bool> osprayClear(false);
-
-void StartOSPRay() {
-  osprayStop = false;
-  osprayThread = new std::thread([=] {
-    while (!osprayStop) {
-      if (osprayClear) { framebuffer.CleanBuffer();osprayClear = false; }
-      ospRenderFrame(framebuffer.OSPRayPtr(), renderer, OSP_FB_COLOR | OSP_FB_ACCUM);
-      framebuffer.Swap();
-    }
-  });
-}
-
-void StopOSPRay() { osprayStop = true; osprayThread->join(); }
-
-bool ClearOSPRay() { osprayClear = true; }
 
 //-------------------------------------------------------------------------------------------------------------//
 
@@ -72,14 +50,13 @@ void cursor_position_callback(GLFWwindow *window, double xpos, double ypos) {
 void window_size_callback(GLFWwindow *window, int width, int height) {
   glViewport(0, 0, width, height);
   camera.CameraUpdateProj((size_t)width, (size_t)height);
-  StopOSPRay();
-  framebuffer.Resize((size_t)width, (size_t)height);
-  StartOSPRay();
+  ResizeOSPRay(width, height);
 }
 
 //-------------------------------------------------------------------------------------------------------------//
 
-void RenderWindow(GLFWwindow *window) {
+void RenderWindow(GLFWwindow *window)
+{
   // init GUI
   {
     // Initialize GUI
@@ -103,11 +80,10 @@ void RenderWindow(GLFWwindow *window) {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     // render GUI
     {
-      framebuffer.Upload();
+      UploadOSPRay();
       ImGui_ImplGlfwGL3_NewFrame();
 #ifdef USE_TFN_MODULE
-      tfnWidget->drawUi();
-      tfnWidget->render();
+      if (tfnWidget->drawUI()) { tfnWidget->render(); };
 #endif
       tfn::tfn_widget::DrawUI();
       ImGui::Render();

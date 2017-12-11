@@ -27,4 +27,11 @@ extern OSPRenderer renderer;
 extern std::vector<std::function<void()>> clean_list;
 void Clean();
 
+// ospray
+void StartOSPRay();
+void StopOSPRay();
+void ClearOSPRay();
+void ResizeOSPRay(int width, int height);
+void UploadOSPRay();
+
 #endif //OSPRAY_GLOBAL_H
