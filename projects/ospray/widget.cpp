@@ -22,14 +22,18 @@ static float  hist_range[6] = {0.f}; // histogram value range
 //
 //------------------------------------------------------------------------------------------------//
 static bool array_render = true;
+static bool array_use2d = true;
+static float  array_opacity_boost = 10.f;
+static float  array_opacity_gamma = 0.1f;
+static float  array_tex_gamma = 0.1f;
 static GLuint array_tex = 0;
 static vec2f array1d_range;
 static vec2f array2d_range;
-static std::vector<float> array1d_p;
-static std::vector<float> array2d_p;
+static std::vector<float> array1d_opacity;
+static std::vector<float> array2d_opacity;
 
 static float g_threshold = 0.f;
-static float sigma = 0.001f;
+static float sigma = 0.005f;
 
 //------------------------------------------------------------------------------------------------//
 template<typename T> T clamp(T v, T l, T u) { return std::min(u, std::max(l, v)); }
@@ -41,12 +45,12 @@ namespace tfn_widget {
 //------------------------------------------------------------------------------------------------//
 float OpacityFunction(float x)
 {
-  if (x < 0) return std::max(x + sigma, 0.f);
-  else return  std::max(-x + sigma, 0.f);
+  if (x < 0) return std::min(array_opacity_boost * std::max(x + sigma, 0.f), 1.f);
+  else return std::min(array_opacity_boost * std::max(-x + sigma, 0.f), 1.f);
 }
 void GenerateClassification()
 {
-  array1d_p.resize(volume.GetHistogram().HistXDim());
+  array1d_opacity.resize(volume.GetHistogram().HistXDim());
   {
     tbb::parallel_for(size_t(0), volume.GetHistogram().HistXDim(), [&](size_t ix) {
       float ag = 0.f, aa = 0.f;
@@ -64,15 +68,15 @@ void GenerateClassification()
       ag /= n;
       aa /= n;
       if (ag < g_threshold) {
-        array2d_p[ix] = 0.f;
+        array2d_opacity[ix] = 0.f;
       } else {
-        array1d_p[ix] = OpacityFunction(-sigma * sigma * aa / (std::max(ag - g_threshold, 0.f)));
+        array1d_opacity[ix] = OpacityFunction(-sigma * sigma * aa / (std::max(ag - g_threshold, 0.f)));
       }
-      array1d_range.x = std::min(array1d_p[ix], array1d_range.x);
-      array1d_range.y = std::max(array1d_p[ix], array1d_range.y);
+      array1d_range.x = std::min(array1d_opacity[ix], array1d_range.x);
+      array1d_range.y = std::max(array1d_opacity[ix], array1d_range.y);
     });
   }
-  array2d_p.resize(volume.GetHistogram().HistCountXY());
+  array2d_opacity.resize(volume.GetHistogram().HistCountXY());
   {
     tbb::parallel_for(size_t(0), volume.GetHistogram().HistCountXY(), [&](size_t k) {
       const size_t ix = k % volume.GetHistogram().HistXDim();
@@ -88,32 +92,27 @@ void GenerateClassification()
       }
       aa /= n;
       if (g < g_threshold) {
-        array2d_p[k] = 0.f;
+        array2d_opacity[k] = 0.f;
       } else {
-        array2d_p[k] = OpacityFunction(-sigma * sigma * aa / (std::max(g - g_threshold, 0.f)));
+        array2d_opacity[k] = OpacityFunction(-sigma * sigma * aa / (std::max(g - g_threshold, 0.f)));
       }
-      array2d_range.x = std::min(array2d_p[k], array2d_range.x);
-      array2d_range.y = std::max(array2d_p[k], array2d_range.y);
+      array2d_range.x = std::min(array2d_opacity[k], array2d_range.x);
+      array2d_range.y = std::max(array2d_opacity[k], array2d_range.y);
     });
   }
-  const std::vector<float> colors =
-    {
-      0.00f, 0.00f, 1.00f,
-      0.00f, 0.25f, 0.75f,
-      0.00f, 0.50f, 0.50f,
-      0.00f, 0.75f, 0.25f,
-      0.00f, 1.00f, 0.00f,
-      0.25f, 0.75f, 0.00f,
-      0.50f, 0.50f, 0.00f,
-      0.75f, 0.25f, 0.00f,
-      1.00f, 0.00f, 0.00f,
-    };
-//  volume.GetTransferFunction().Update(colors.data(), array1d_p.data(),
-//                                      (int)colors.size() / 3, 1,
-//                                      (int)array1d_p.size(), 1);
-  volume.GetTransferFunction().Update(colors.data(), array2d_p.data(),
-                                      colors.size() / 3, 1,
-                                      volume.GetHistogram().HistXDim(), volume.GetHistogram().HistYDim());
+  if (!array_use2d) {
+    tfn_opacity_data = array1d_opacity;
+    tfn_opacity_dim[0] = array1d_opacity.size();
+    tfn_opacity_dim[1] = 1;
+  }
+  else {
+    tfn_opacity_data = array2d_opacity;
+    tfn_opacity_dim[0] = volume.GetHistogram().HistXDim();
+    tfn_opacity_dim[1] = volume.GetHistogram().HistYDim();
+  }
+  volume.GetTransferFunction().Update(tfn_color_data.data(), tfn_opacity_data.data(),
+                                      (int)tfn_color_dim[0], (int)tfn_color_dim[1],
+                                      (int)tfn_opacity_dim[0], (int)tfn_opacity_dim[1]);
   ClearOSPRay();
 }
 //------------------------------------------------------------------------------------------------//
@@ -215,7 +214,7 @@ void RenderTFN() {
     if (array_tex == 0) { CreateTFNTexture(array_tex, volume.GetHistogram().HistXDim(), volume.GetHistogram().HistYDim()); }
     std::vector <uint8_t> tmp_data(volume.GetHistogram().HistCountXY() * 3);
     tbb::parallel_for(size_t(0), volume.GetHistogram().HistCountXY(), [&](size_t k) {
-      const auto value = static_cast<uint8_t>(255 * array2d_p[k]);
+      const auto value = static_cast<uint8_t>(255 * std::pow(array2d_opacity[k], array_tex_gamma));
       tmp_data[3 * k + 0] = value;
       tmp_data[3 * k + 1] = value;
       tmp_data[3 * k + 2] = value;
@@ -304,16 +303,32 @@ void DrawTransferFunction()
 {
   if (!ImGui::Begin("Semi-Automatic TFN Widget")) {
     ImGui::End();
+    tfn_opacity_data.clear();
     return;
   }
-  if (ImGui::SliderFloat("sigma", &sigma, 0.f, 1.f, "%.4f"))
+  if (ImGui::SliderFloat("sigma", &sigma, 0.0001f, 1.0000f, "%.4f"))
   {
     array_render = true;
   }
-  if (ImGui::SliderFloat("g_threshold", &g_threshold,
+  if (ImGui::SliderFloat("gradient threshold", &g_threshold,
                          volume.Get1stGradientRangeX(),
                          volume.Get1stGradientRangeY(), "%.4f"))
   {
+    array_render = true;
+  }
+  if (ImGui::SliderFloat("opacity boost", &array_opacity_boost, 1.f, 100.f, "%.4f"))
+  {
+    array_render = true;
+  }
+  if (ImGui::SliderFloat("opacity gamma", &array_opacity_gamma, 0.0001f, 1.0000f, "%.4f"))
+  {
+    array_render = true;
+  }
+  if (ImGui::SliderFloat("display gamma", &array_tex_gamma, 0.0001f, 1.0000f, "%.4f"))
+  {
+    array_render = true;
+  }
+  if (ImGui::Checkbox("Use 2D-Transfer Function", &array_use2d)){
     array_render = true;
   }
   // Preparation
@@ -331,36 +346,34 @@ void DrawTransferFunction()
   {
     canvas_y += margin;
     const float scale = 1.f / std::max(std::abs(array1d_range.y), std::abs(array1d_range.x));
-    const float width  = canvas_avail_x - margin;
-    const float height = 40.f;
+    const float width  = (canvas_avail_x - margin) / 2.f;
+    const float height = width;
     const float offset_x = canvas_x;
     const float offset_y = canvas_y + height;
     ImGui::SetCursorScreenPos(ImVec2(canvas_x, canvas_y));
     draw_list->AddLine(ImVec2(offset_x, offset_y), ImVec2(offset_x + width + 1, offset_y), 0xFF0000FF, 1);
-    draw_list->AddLine(ImVec2(offset_x, offset_y - height), ImVec2(offset_x, offset_y + height), 0xFF0000FF, 1);
+    draw_list->AddLine(ImVec2(offset_x, offset_y - height), ImVec2(offset_x, offset_y), 0xFF0000FF, 1);
     draw_list->AddTriangleFilled(ImVec2(offset_x, offset_y - height),
                                  ImVec2(offset_x-3.f, offset_y - height+3.f),
                                  ImVec2(offset_x+3.f, offset_y - height+3.f),
                                  0xFF0000FF);
-    for (int i = 0; i < array1d_p.size()-1; ++i)
+    for (int i = 0; i < array1d_opacity.size()-1; ++i)
     {
       std::vector<ImVec2> polyline;
-      const float x0 = (float)i     / (array1d_p.size() - 1);
-      const float y0 = array1d_p[i  ] * scale;
-      const float x1 = (float)(i+1) / (array1d_p.size() - 1);
-      const float y1 = array1d_p[i+1] * scale;
+      const float x0 = (float)i     / (array1d_opacity.size() - 1);
+      const float y0 = array1d_opacity[i  ] * scale;
+      const float x1 = (float)(i+1) / (array1d_opacity.size() - 1);
+      const float y1 = array1d_opacity[i+1] * scale;
       polyline.emplace_back(offset_x + x0 * width, offset_y);
       polyline.emplace_back(offset_x + x0 * width, offset_y - y0 * height);
       polyline.emplace_back(offset_x + x1 * width, offset_y - y1 * height);
       polyline.emplace_back(offset_x + x1 * width, offset_y);
       draw_list->AddConvexPolyFilled(polyline.data(), (int)polyline.size(), 0x99D8D8D8, true);
     }
-    canvas_y += height * 2.f;
   }
   {
-    canvas_y += margin;
-    const float width  = canvas_avail_x - margin - 1;
-    ImGui::SetCursorScreenPos(ImVec2(canvas_x, canvas_y));
+    const float width = (canvas_avail_x - margin) / 2.f;
+    ImGui::SetCursorScreenPos(ImVec2(canvas_x + width + margin, canvas_y));
     ImGui::Image(reinterpret_cast<void *>(array_tex), ImVec2(width,width));
   }
   ImGui::End();

@@ -65,9 +65,21 @@ void RenderWindow(GLFWwindow *window)
     tfnWidget = std::make_shared<tfn::tfn_widget::TransferFunctionWidget>
       ([]() { return 256; },
        [&](const std::vector<float> &c, const std::vector<float> &a) {
-         std::vector<float> o(a.size() / 2);
-         for (size_t i = 0; i < a.size() / 2; ++i) { o[i] = a[2 * i + 1]; }
-         volume.GetTransferFunction().Update(c.data(), o.data(), (int)c.size() / 3, 1, (int)o.size(), 1);
+         tfn_color_data = c;
+         tfn_color_dim[0] = c.size() / 3;
+         tfn_color_dim[1] = 1;
+         if (tfn_opacity_data.empty())
+         {
+           tfn_opacity_data.resize(a.size() / 2);
+           for (size_t i = 0; i < a.size() / 2; ++i) {
+             tfn_opacity_data[i] = a[2 * i + 1];
+           }
+           tfn_opacity_dim[0] = a.size();
+           tfn_opacity_dim[1] = 1;
+         }
+         volume.GetTransferFunction().Update(tfn_color_data.data(), tfn_opacity_data.data(),
+                                             (int)tfn_color_dim[0], (int)tfn_color_dim[1],
+                                             (int)tfn_opacity_dim[0], (int)tfn_opacity_dim[1]);
          ClearOSPRay();
        });
 #endif

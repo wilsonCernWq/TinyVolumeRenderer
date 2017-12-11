@@ -18,7 +18,10 @@ extern Framebuffer framebuffer;
 
 // volume
 extern Volume volume;
-
+extern std::vector<float> tfn_opacity_data;
+extern std::vector<float> tfn_color_data;
+extern size_t tfn_opacity_dim[2];
+extern size_t tfn_color_dim[2];
 // renderer
 extern OSPModel world;
 extern OSPRenderer renderer;

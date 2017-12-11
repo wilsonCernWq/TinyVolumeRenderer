@@ -13,6 +13,21 @@ Framebuffer framebuffer;
 
 // volume
 Volume volume;
+size_t tfn_opacity_dim[2];
+size_t tfn_color_dim[2] = {9, 1};
+std::vector<float> tfn_opacity_data;
+std::vector<float> tfn_color_data =
+  {
+    0.00f, 0.00f, 1.00f,
+    0.00f, 0.25f, 0.75f,
+    0.00f, 0.50f, 0.50f,
+    0.00f, 0.75f, 0.25f,
+    0.00f, 1.00f, 0.00f,
+    0.25f, 0.75f, 0.00f,
+    0.50f, 0.50f, 0.00f,
+    0.75f, 0.25f, 0.00f,
+    1.00f, 0.00f, 0.00f,
+  };
 
 // renderer
 OSPModel world = nullptr;
