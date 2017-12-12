@@ -2,6 +2,38 @@
 #include "../../reader/volume_reader.hpp"
 #include <mutex>
 
+float ParallelMin(const std::vector<float>& array, float& v)
+{
+  using iter_t = std::vector<float>::const_iterator;
+  return tbb::parallel_reduce
+    (tbb::blocked_range<iter_t>(array.begin(), array.end()),
+     v,
+     [](const tbb::blocked_range<iter_t>& r, float init)->float {
+       for (auto a = r.begin(); a!=r.end(); ++a)
+       {
+         init = std::min(init, *a);
+       }
+       return init;
+     },
+     [](float x, float y)->float { return std::min(x,y); });
+}
+
+float ParallelMax(const std::vector<float>& array, float& v)
+{
+  using iter_t = std::vector<float>::const_iterator;
+  return tbb::parallel_reduce
+    (tbb::blocked_range<iter_t>(array.begin(), array.end()),
+     v,
+     [](const tbb::blocked_range<iter_t>& r, float init)->float {
+       for (auto a = r.begin(); a!=r.end(); ++a)
+       {
+         init = std::max(init, *a);
+       }
+       return init;
+     },
+     [](float x, float y)->float { return std::max(x,y); });
+}
+
 Volume::HistVolume::HistVolume(size_t x, size_t y, size_t z)
   : histXDim(x), histYDim(y), histZDim(z), histCount(histXDim * histYDim * histZDim) {};
 
@@ -65,11 +97,12 @@ void Volume::ComputeGradients() {
       const auto fny = ReadAs<float>(data_ptr, (int)(i - idy), data_type);
       const auto fpz = ReadAs<float>(data_ptr, (int)(i + idz), data_type);
       const auto fnz = ReadAs<float>(data_ptr, (int)(i - idz), data_type);
-      float g = ospcommon::length(ospcommon::vec3f((fpx - fnx) / 2.f / data_spacing,
-                                                   (fpy - fny) / 2.f / data_spacing,
-                                                   (fpz - fnz) / 2.f / data_spacing));
-      float a =
-          (fpx + fnx - 2.f * v) / (data_spacing * data_spacing) +
+      const float g
+        = ospcommon::length(ospcommon::vec3f((fpx - fnx) / 2.f / data_spacing,
+                                             (fpy - fny) / 2.f / data_spacing,
+                                             (fpz - fnz) / 2.f / data_spacing));
+      const float a
+        = (fpx + fnx - 2.f * v) / (data_spacing * data_spacing) +
           (fpy + fny - 2.f * v) / (data_spacing * data_spacing) +
           (fpz + fnz - 2.f * v) / (data_spacing * data_spacing);
       const size_t new_id = (x - 1) + (y - 1) * (data_dims.x - 2) + (z - 1) * (data_dims.x - 2) * (data_dims.y - 2);
@@ -78,26 +111,12 @@ void Volume::ComputeGradients() {
       aData[new_id] = a;
     }
   });
-  const auto block_start = size_t(0);
-  const auto block_end = (data_dims.x - 2) * (data_dims.y - 2) * (data_dims.z - 2);
-  tbb::parallel_reduce(tbb::blocked_range<size_t>(block_start, block_end,
-    [&](size_t k)
-    {
-    const float v = vData[k];
-    const float g = gData[k];
-    const float a = aData[k];
-    vRange.x = std::min(vRange.x, v);
-    vRange.y = std::max(vRange.y, v);
-    gRange.x = std::min(gRange.x, g);
-    gRange.y = std::max(gRange.y, g);
-    aRange.x = std::min(aRange.x, a);
-    aRange.y = std::max(aRange.y, a);
-    if (a < aRange.x) {
-      std::cout << "xx" << std::endl;
-    }
-  },
-  [&]());
-
+  vRange.x = ParallelMin(vData, vRange.x);
+  gRange.x = ParallelMin(gData, gRange.x);
+  aRange.x = ParallelMin(aData, aRange.x);
+  vRange.y = ParallelMax(vData, vRange.y);
+  gRange.y = ParallelMax(gData, gRange.y);
+  aRange.y = ParallelMax(aData, aRange.y);
   Timer("compute gradient");
 }
 
