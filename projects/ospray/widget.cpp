@@ -72,7 +72,8 @@ void GenerateClassification()
       if (ag < g_threshold) {
         array2d_opacity[ix] = 0.f;
       } else {
-        array1d_opacity[ix] = OpacityFunction(-sigma * sigma * aa / (std::max(ag - g_threshold, 0.f)));
+        array1d_opacity[ix] =
+	  OpacityFunction(-sigma * sigma * aa / (std::max(ag - g_threshold, 0.f)));
       }
       array1d_range.x = std::min(array1d_opacity[ix], array1d_range.x);
       array1d_range.y = std::max(array1d_opacity[ix], array1d_range.y);
@@ -96,7 +97,8 @@ void GenerateClassification()
       if (g < g_threshold) {
         array2d_opacity[k] = 0.f;
       } else {
-        array2d_opacity[k] = OpacityFunction(-sigma * sigma * aa / (std::max(g - g_threshold, 0.f)));
+        array2d_opacity[k] =
+	  OpacityFunction(-sigma * sigma * aa / (std::max(g - g_threshold, 0.f)));
       }
       array2d_range.x = std::min(array2d_opacity[k], array2d_range.x);
       array2d_range.y = std::max(array2d_opacity[k], array2d_range.y);
@@ -117,15 +119,16 @@ void GenerateClassification()
                                       (int)tfn_opacity_dim[0], (int)tfn_opacity_dim[1]);
   ClearOSPRay();
 }
-//------------------------------------------------------------------------------------------------//
+//-----------------------------------------------------------------------------------------//
 // Local
-//------------------------------------------------------------------------------------------------//
+//-----------------------------------------------------------------------------------------//
 void CreateTFNTexture(GLuint &tex, size_t width, size_t height) {
   GLint prevBinding = 0;
   glGetIntegerv(GL_TEXTURE_BINDING_2D, &prevBinding);
   glGenTextures(1, &tex);
   glBindTexture(GL_TEXTURE_2D, tex);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, (GLuint) width, (GLuint) height, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, (GLuint) width, (GLuint) height,
+	       0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
@@ -137,11 +140,15 @@ void RenderTFNTexture(GLuint &tex, const std::vector <size_t>& counts,
 {
   std::vector <uint8_t> tex_data(width * height * 3);
   tbb::parallel_for(size_t(0), width * height, [&](size_t k) {
-    const float ratio = std::pow(clamp(static_cast<float>(counts[k]) / upper, 0.f, 1.f), gamma);
+    const float ratio =
+      std::pow(clamp(static_cast<float>(counts[k]) / upper, 0.f, 1.f), gamma);
+    const auto x = k % width;
+    const auto y = k / width;
+    const auto s = x + (height - y - 1) * width;
     const auto value = static_cast<uint8_t>(255 * ratio);
-    tex_data[3 * k + 0] = value;
-    tex_data[3 * k + 1] = value;
-    tex_data[3 * k + 2] = value;
+    tex_data[3 * s + 0] = value;
+    tex_data[3 * s + 1] = value;
+    tex_data[3 * s + 2] = value;
   });
   glBindTexture(GL_TEXTURE_2D, tex);
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, (GLuint) width, (GLuint) height, 0, GL_RGB, GL_UNSIGNED_BYTE,
@@ -159,7 +166,7 @@ void RenderTFN() {
                      volume.GetHistogram().HistZDim());
   }
   if (hist_render) {
-    //---------------------------------------------------------------------------------------------------------------//
+    //-------------------------------------------------------------------------------------//
     {
       std::vector <size_t> hist_count(volume.GetHistogram().HistCountXY(),0);
       size_t hist_max(0);
@@ -169,7 +176,8 @@ void RenderTFN() {
         const float v = volume.SampleHistX(ix);
         const float g = volume.SampleHistY(iy);
         size_t count = 0;
-        if (v >= hist_range[0] && v <= hist_range[1] && g >= hist_range[2] && g <= hist_range[3])
+        if (v >= hist_range[0] && v <= hist_range[1] &&
+	    g >= hist_range[2] && g <= hist_range[3])
         {
           for (size_t iz = 0; iz < volume.GetHistogram().HistZDim(); ++iz) {
             count += volume.GetHistogram().At(ix, iy, iz);
@@ -183,7 +191,7 @@ void RenderTFN() {
                        volume.GetHistogram().HistYDim(),
                        0.01f * hist_clamp[0] * hist_max, hist_gamma[0]);
     }
-    //---------------------------------------------------------------------------------------------------------------//
+    //-------------------------------------------------------------------------------------//
     {
       std::vector <size_t> hist_count(volume.GetHistogram().HistCountXZ(), 0);
       size_t hist_max(0);
@@ -193,7 +201,8 @@ void RenderTFN() {
         const float v = volume.SampleHistX(ix);
         const float a = volume.SampleHistZ(iz);
         size_t count = 0;
-        if (v >= hist_range[0] && v <= hist_range[1] && a >= hist_range[4] && a <= hist_range[5])
+        if (v >= hist_range[0] && v <= hist_range[1] &&
+	    a >= hist_range[4] && a <= hist_range[5])
         {
           for (size_t iy = 0; iy < volume.GetHistogram().HistYDim(); ++iy) {
             count += volume.GetHistogram().At(ix, iy, iz);
@@ -207,19 +216,28 @@ void RenderTFN() {
                        volume.GetHistogram().HistZDim(),
                        0.01f * hist_clamp[1] * hist_max, hist_gamma[1]);
     }
-    //---------------------------------------------------------------------------------------------------------------//
+    //-------------------------------------------------------------------------------------//
     hist_render = false;
   }
   if (array_render)
   {
     GenerateClassification();
-    if (array_tex == 0) { CreateTFNTexture(array_tex, volume.GetHistogram().HistXDim(), volume.GetHistogram().HistYDim()); }
+    if (array_tex == 0) {
+      CreateTFNTexture(array_tex, volume.GetHistogram().HistXDim(),
+		       volume.GetHistogram().HistYDim());
+    }
     std::vector <uint8_t> tmp_data(volume.GetHistogram().HistCountXY() * 3);
     tbb::parallel_for(size_t(0), volume.GetHistogram().HistCountXY(), [&](size_t k) {
-      const auto value = static_cast<uint8_t>(255 * std::pow(array2d_opacity[k], array_tex_gamma));
-      tmp_data[3 * k + 0] = value;
-      tmp_data[3 * k + 1] = value;
-      tmp_data[3 * k + 2] = value;
+      const auto value =
+	static_cast<uint8_t>(255 * std::pow(array2d_opacity[k], array_tex_gamma));
+      const auto x = k % volume.GetHistogram().HistXDim();
+      const auto y = k / volume.GetHistogram().HistXDim();
+      const auto s =
+	x +
+	(volume.GetHistogram().HistYDim() - y - 1) * volume.GetHistogram().HistXDim();
+      tmp_data[3 * s + 0] = value;
+      tmp_data[3 * s + 1] = value;
+      tmp_data[3 * s + 2] = value;
     });
     glBindTexture(GL_TEXTURE_2D, array_tex);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8,
