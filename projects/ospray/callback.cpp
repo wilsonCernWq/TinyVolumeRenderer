@@ -34,8 +34,8 @@ void key_callback(GLFWwindow *window, int key, int scancode, int action, int mod
     glfwSetWindowShouldClose(window, GLFW_TRUE);
   }
   if (!ImGui::GetIO().WantCaptureKeyboard) {
-    ImGui_ImplGlfwGL3_KeyCallback(window, key, scancode, action, mods);
   }
+  ImGui_ImplGlfwGL3_KeyCallback(window, key, scancode, action, mods); 
 }
 
 void cursor_position_callback(GLFWwindow *window, double xpos, double ypos) {
