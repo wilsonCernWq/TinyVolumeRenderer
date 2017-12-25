@@ -9,18 +9,18 @@
 using vec2f = glm::vec2;
 using vec3f = glm::vec3;
 
-//------------------------------------------------------------------------------------------------//
+//-----------------------------------------------------------------------------------------//
 //
-//------------------------------------------------------------------------------------------------//
+//-----------------------------------------------------------------------------------------//
 static bool hist_render = true;
 static GLuint hist_tex[2] = {0,0}; // openGL texture storages for f'  vs f, f'' vs f 
 static float  hist_clamp[2] = {100.f, 100.f}; // histogram maximum count / histogram real maximum
 static float  hist_gamma[2] = {1.f, 1.f};     // gamma correction
 static float  hist_range[6] = {0.f}; // histogram value range
 
-//------------------------------------------------------------------------------------------------//
+//-----------------------------------------------------------------------------------------//
 //
-//------------------------------------------------------------------------------------------------//
+//-----------------------------------------------------------------------------------------//
 static bool array_render = true;
 static bool array_use2d = true;
 static float  array_opacity_boost = 10.f;
@@ -36,14 +36,14 @@ static float g_threshold = 0.f;
 static float r_sigma = 0.5f;
 static float sigma = r_sigma;
 
-//------------------------------------------------------------------------------------------------//
+//-----------------------------------------------------------------------------------------//
 template<typename T> T clamp(T v, T l, T u) { return std::min(u, std::max(l, v)); }
-//------------------------------------------------------------------------------------------------//
+//-----------------------------------------------------------------------------------------//
 namespace tfn {
 namespace tfn_widget {
-//------------------------------------------------------------------------------------------------//
+//-----------------------------------------------------------------------------------------//
 // Auto-Classification
-//------------------------------------------------------------------------------------------------//
+//-----------------------------------------------------------------------------------------//
 float OpacityFunction(float x)
 {
   if (x < 0) return std::min(array_opacity_boost * std::max(x + sigma, 0.f), 1.f);
@@ -151,7 +151,8 @@ void RenderTFNTexture(GLuint &tex, const std::vector <size_t>& counts,
     tex_data[3 * s + 2] = value;
   });
   glBindTexture(GL_TEXTURE_2D, tex);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, (GLuint) width, (GLuint) height, 0, GL_RGB, GL_UNSIGNED_BYTE,
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, (GLuint) width, (GLuint) height,
+	       0, GL_RGB, GL_UNSIGNED_BYTE,
                static_cast<const void *>(tex_data.data()));
 }
 void RenderTFN() {
@@ -288,12 +289,13 @@ void DrawHistogramInfo()
   {
     hist_render = true;
   }
-  if (ImGui::SliderFloat("##clamp-1", &hist_clamp[1], 0.1f, 100.f, "f'' Max Clamp: %.1f%%")) {
+  if (ImGui::SliderFloat("##clamp-1", &hist_clamp[1], 0.1f, 100.f, "f'' Max Clamp: %.1f%%"))
+  {
     hist_render = true;
   }
-  //----------------------------------------------------------------------------------------------//
+  //---------------------------------------------------------------------------------------//
   // Preparation
-  //----------------------------------------------------------------------------------------------//
+  //---------------------------------------------------------------------------------------//
   ImDrawList *draw_list = ImGui::GetWindowDrawList();
   float canvas_x = ImGui::GetCursorScreenPos().x;
   float canvas_y = ImGui::GetCursorScreenPos().y;
@@ -304,9 +306,9 @@ void DrawHistogramInfo()
   const float scroll_x = ImGui::GetScrollX();
   const float scroll_y = ImGui::GetScrollY();
   const float margin = 5.f;
-  //----------------------------------------------------------------------------------------------//
+  //---------------------------------------------------------------------------------------//
   // Draw Images
-  //----------------------------------------------------------------------------------------------//
+  //---------------------------------------------------------------------------------------//
   {
     canvas_y += margin;
     const float image_size  = (canvas_avail_x - margin) / 2;
@@ -371,8 +373,10 @@ void DrawTransferFunction()
     const float offset_x = canvas_x;
     const float offset_y = canvas_y + height;
     ImGui::SetCursorScreenPos(ImVec2(canvas_x, canvas_y));
-    draw_list->AddLine(ImVec2(offset_x, offset_y), ImVec2(offset_x + width + 1, offset_y), 0xFF0000FF, 1);
-    draw_list->AddLine(ImVec2(offset_x, offset_y - height), ImVec2(offset_x, offset_y), 0xFF0000FF, 1);
+    draw_list->AddLine(ImVec2(offset_x, offset_y),
+		       ImVec2(offset_x + width + 1, offset_y), 0xFF0000FF, 1);
+    draw_list->AddLine(ImVec2(offset_x, offset_y - height),
+		       ImVec2(offset_x, offset_y), 0xFF0000FF, 1);
     draw_list->AddTriangleFilled(ImVec2(offset_x, offset_y - height),
                                  ImVec2(offset_x-3.f, offset_y - height+3.f),
                                  ImVec2(offset_x+3.f, offset_y - height+3.f),
@@ -388,7 +392,9 @@ void DrawTransferFunction()
       polyline.emplace_back(offset_x + x0 * width, offset_y - y0 * height);
       polyline.emplace_back(offset_x + x1 * width, offset_y - y1 * height);
       polyline.emplace_back(offset_x + x1 * width, offset_y);
-      draw_list->AddConvexPolyFilled(polyline.data(), (int)polyline.size(), 0x99D8D8D8, true);
+      draw_list->AddConvexPolyFilled(polyline.data(),
+				     (int)polyline.size(),
+				     0x99D8D8D8, true);
     }
   }
   {
@@ -398,9 +404,9 @@ void DrawTransferFunction()
   }
   ImGui::End();
 }
-//------------------------------------------------------------------------------------------------//
+//-----------------------------------------------------------------------------------------//
 // Global
-//------------------------------------------------------------------------------------------------//
+//-----------------------------------------------------------------------------------------//
 void InitUI() {
   hist_range[0] = volume.GetValueRangeX();
   hist_range[1] = volume.GetValueRangeY();
@@ -408,8 +414,10 @@ void InitUI() {
   hist_range[3] = volume.Get1stGradientRangeY();
   hist_range[4] = volume.Get2ndGradientRangeX();
   hist_range[5] = volume.Get2ndGradientRangeY();
-  array1d_range = vec2f(std::numeric_limits<float>::max(), std::numeric_limits<float>::min());
-  array2d_range = vec2f(std::numeric_limits<float>::max(), std::numeric_limits<float>::min());
+  array1d_range = vec2f(std::numeric_limits<float>::max(),
+			std::numeric_limits<float>::min());
+  array2d_range = vec2f(std::numeric_limits<float>::max(),
+			std::numeric_limits<float>::min());
 }
 void DrawUI() {
   RenderTFN();

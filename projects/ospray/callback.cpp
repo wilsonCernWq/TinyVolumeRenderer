@@ -18,14 +18,24 @@
 static std::shared_ptr<tfn::tfn_widget::TransferFunctionWidget> tfnWidget;
 #endif
 
-//-------------------------------------------------------------------------------------------------------------//
+//-----------------------------------------------------------------------------------------//
 
 void error_callback(int error, const char *description) {
   fprintf(stderr, "Error: %s\n", description);
 }
 
+void char_callback(GLFWwindow *window, unsigned int c) {
+  ImGuiIO& io = ImGui::GetIO();
+  if (c > 0 && c < 0x10000) { io.AddInputCharacter((unsigned short)c); }
+}
+
 void key_callback(GLFWwindow *window, int key, int scancode, int action, int mods) {
-  if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) { glfwSetWindowShouldClose(window, GLFW_TRUE); }
+  if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
+    glfwSetWindowShouldClose(window, GLFW_TRUE);
+  }
+  if (!ImGui::GetIO().WantCaptureKeyboard) {
+    ImGui_ImplGlfwGL3_KeyCallback(window, key, scancode, action, mods);
+  }
 }
 
 void cursor_position_callback(GLFWwindow *window, double xpos, double ypos) {
@@ -53,7 +63,7 @@ void window_size_callback(GLFWwindow *window, int width, int height) {
   ResizeOSPRay(width, height);
 }
 
-//-------------------------------------------------------------------------------------------------------------//
+//-----------------------------------------------------------------------------------------//
 
 void RenderWindow(GLFWwindow *window)
 {
@@ -63,7 +73,7 @@ void RenderWindow(GLFWwindow *window)
     ImGui_ImplGlfwGL3_Init(window, false);
 #ifdef USE_TFN_MODULE
     tfnWidget = std::make_shared<tfn::tfn_widget::TransferFunctionWidget>
-      ([]() { return 256; },
+      ([ ]() { return 256; },
        [&](const std::vector<float> &c, const std::vector<float> &a) {
          tfn_color_data = c;
          tfn_color_dim[0] = c.size() / 3;
@@ -77,9 +87,12 @@ void RenderWindow(GLFWwindow *window)
            tfn_opacity_dim[0] = a.size();
            tfn_opacity_dim[1] = 1;
          }
-         volume.GetTransferFunction().Update(tfn_color_data.data(), tfn_opacity_data.data(),
-                                             (int)tfn_color_dim[0], (int)tfn_color_dim[1],
-                                             (int)tfn_opacity_dim[0], (int)tfn_opacity_dim[1]);
+         volume.GetTransferFunction().Update(tfn_color_data.data(),
+					     tfn_opacity_data.data(),
+                                             (int)tfn_color_dim[0],
+					     (int)tfn_color_dim[1],
+                                             (int)tfn_opacity_dim[0],
+					     (int)tfn_opacity_dim[1]);
          ClearOSPRay();
        });
 #endif
@@ -137,6 +150,7 @@ GLFWwindow *CreateWindow() {
   glfwSetKeyCallback(window, key_callback);
   glfwSetWindowSizeCallback(window, window_size_callback);
   glfwSetCursorPosCallback(window, cursor_position_callback);
+  glfwSetCharCallback(window, char_callback);
   // Ready
   glfwMakeContextCurrent(window);
   gladLoadGLLoader((GLADloadproc) glfwGetProcAddress);
