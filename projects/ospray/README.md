@@ -1,6 +1,10 @@
+[teaser]: assets/Teaser.png "Semi-Automatic Classification of Tooth Dataset using 2D Transfer Function"
+[figure1]: assets/Figure1.png "An example for configuring the gradient transfer function plugin" 
+
 # Semi-Automatic Transfer Function Generation #
 
-![alt text](assets/Teaser.png "Semi-Automatic Classification of "Tooth" Dataset using 2D Transfer Function")
+![alt text][teaser]
+*Teaser Semi-Automatic Classification of *Tooth* Dataset using 2D Transfer Function*
 
 ## Introduction ##
 
@@ -12,6 +16,11 @@ In 1998, Gordon Kindlmann introduced a semi-automatic method to generate 1D or 2
 I implemented a 2D transfer function widget inside OSPRay. Originally OSPRay considers transfer function only as one of the properties in volume, which means any transfer function must be owned by one or several volumes. During the rendering process, OSPRay queries the emission and absorption value using the sampled scalar value only. This method simplifies the implementation of a 1D transfer function, but limits the developments of multivariate transfer functions because the transfer function cannot read other volumetric information through the existing class abstraction.
 
 To fix the problem, I changed the way of thinking. Instead of attaching a transfer function to any volume, I removed the connections between them. As a result, the renderer need to provide one volume and one sample position to the transfer function each time it needs to calculate the color. It is now the transfer function’s responsibility to sample the volume in a provided position. Of course, a transfer function can choose to sample one or more variables depends on its implementation.
+
+![alt text][figure1]
+*Figure 1 An example for configuring the gradient transfer function plugin*
+
+With the help of this modification in core OSPRay, I easily created a gradient transfer function plugin using OSPRay API. This plugin works for all types of volumes exist in current OSPRay. Users can easily configure the new transfer function using OSPRay API calls as well. An example is provided in [Figure 1](#figure1)
 
 ## How to Compile ##
 
