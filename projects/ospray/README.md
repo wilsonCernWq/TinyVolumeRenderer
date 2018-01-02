@@ -122,7 +122,7 @@ See assets folder
 
 ![alt text](assets/skull.png "skull")
 
-[teaser]: assets/Teaser.png "Semi-Automatic Classification of Tooth Dataset using 2D Transfer Function"
-[figure1]: assets/Figure1.png "An example for configuring the gradient transfer function plugin" 
-[figure2]: assets/Figure2.PNG "Comparison between 1D and 2D transfer function" 
-[figure3]: assets/Figure3.PNG "Three widgets implemented using immediate mode GUI" 
+[teaser]: assets/report/Teaser.png "Semi-Automatic Classification of Tooth Dataset using 2D Transfer Function"
+[figure1]: assets/report/Figure1.png "An example for configuring the gradient transfer function plugin" 
+[figure2]: assets/report/Figure2.png "Comparison between 1D and 2D transfer function" 
+[figure3]: assets/report/Figure3.png "Three widgets implemented using immediate mode GUI" 
