@@ -1,6 +1,3 @@
-[teaser]: assets/Teaser.png "Semi-Automatic Classification of Tooth Dataset using 2D Transfer Function"
-[figure1]: assets/Figure1.png "An example for configuring the gradient transfer function plugin" 
-
 # Semi-Automatic Transfer Function Generation #
 
 ![alt text][teaser]
@@ -20,7 +17,12 @@ To fix the problem, I changed the way of thinking. Instead of attaching a transf
 ![alt text][figure1]
 *Figure 1 An example for configuring the gradient transfer function plugin*
 
-With the help of this modification in core OSPRay, I easily created a gradient transfer function plugin using OSPRay API. This plugin works for all types of volumes exist in current OSPRay. Users can easily configure the new transfer function using OSPRay API calls as well. An example is provided in [Figure 1](#figure1)
+With the help of this modification in core OSPRay, I easily created a gradient transfer function plugin using OSPRay API. This plugin works for all types of volumes exist in current OSPRay. Users can easily configure the new transfer function using OSPRay API calls as well. An example is provided in Figure 1
+
+### Semi-Automatic Classification using Histogram Volume ###
+
+In Gordon’s paper, a histogram volume was used for inspecting the boundary condition. The histogram is simple a 3D histogram
+![alt text](http://chart.googleapis.com/chart?cht=tx&chl=h(f,f',f'')) which computes the appearing frequency of value ![alt text](http://chart.googleapis.com/chart?cht=tx&chl=(f,f',f'')) inside a volume. According to his paper, the first order gradient was calculated by the magnitude of volume gradient ![alt text](http://chart.googleapis.com/chart?cht=tx&chl=f'=‖\Delta f‖) and the second order gradient was computed using Laplacian f^''=(∂^2 f)/(∂x^2 )+(∂^2 f)/(∂y^2 )+(∂^2 f)/(∂z^2 ). To classify the boundary region, we need to first compute an approximate position function:
 
 ## How to Compile ##
 
@@ -91,3 +93,8 @@ See assets folder
 ![alt text](assets/silicium.png "silicium")
 
 ![alt text](assets/skull.png "skull")
+
+[teaser]: assets/Teaser.png "Semi-Automatic Classification of Tooth Dataset using 2D Transfer Function"
+[figure1]: assets/Figure1.png "An example for configuring the gradient transfer function plugin" 
+
+"Comparison between 1D (left) and 2D (middle) transfer function. Both transfer functions are generated using the same distance function. We can see that 2D transfer function can provide a more complicated selection. The corresponding histograms and generated transfer functions are provided also (right). The upper two small pictures are scatter plots of f^'versus f (upper left) and f'' versus f (upper right). The lower two small pictures display the generated 1D (lower left) and 2D (lower right) transfer functions."
