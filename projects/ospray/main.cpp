@@ -15,7 +15,6 @@ int main(int argc, const char **argv) {
   //---------------------------------------------------------------------------------------//
   // initialize ospray and modules
   ospInit(&argc, argv);
-  ospLoadModule("visit");
   ospLoadModule("tfn");
 
   // initialize camera and framebuffer
