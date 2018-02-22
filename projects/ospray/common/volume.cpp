@@ -128,7 +128,6 @@ void Volume::Init(int argc, const char **argv) {
   int _size, _dimx, _dimy, _dimz;
   ReadVolume(argv[1], data_type, _size, _dimx, _dimy, _dimz, data_ptr);
   data_size = size_t(_size); data_dims = vec3s(_dimx, _dimy, _dimz);
-  //data_spacing = std::min(2.f / data_dims.z, std::min(2.f / data_dims.x, 2.f / data_dims.y));
   data_spacing = 1.f;
   Timer("load data");
 
@@ -153,7 +152,7 @@ void Volume::Init(int argc, const char **argv) {
   Timer();
   {
     ospVolume = ospNewVolume("shared_structured_volume");
-    ospVoxelData = ospNewData(data_size, OSP_UCHAR, data_ptr, OSP_DATA_SHARED_BUFFER);
+    //ospVolume = ospNewVolume("block_bricked_volume");
     ospSetVec3i(ospVolume, "dimensions", osp::vec3i{(int)data_dims.x, (int)data_dims.y, (int)data_dims.z});
     ospSetVec3f(ospVolume, "gridOrigin", osp::vec3f{-0.5f * data_spacing * data_dims.x,
                                                     -0.5f * data_spacing * data_dims.y,
@@ -165,9 +164,61 @@ void Volume::Init(int argc, const char **argv) {
     ospSet1i(ospVolume, "singleShade", false);
     ospSet1f(ospVolume, "samplingRate", 0.125f);
     ospSet1f(ospVolume, "adaptiveMaxSamplingRate", 1.f);
-    ospSetData(ospVolume, "voxelData", ospVoxelData);
-    ospSetString(ospVolume, "voxelType", "uchar");
     ospSetObject(ospVolume, "transferFunction", tfn.OSPRayPtr());
+    switch (data_type) {
+    case (UCHAR):
+      ospSetString(ospVolume, "voxelType", "uchar");
+      ospVoxelData = ospNewData(data_dims.x * data_dims.y * data_dims.z,
+				OSP_UCHAR, data_ptr, OSP_DATA_SHARED_BUFFER);
+      break;
+    case (CHAR):
+      fprintf(stderr, "Error: Unsupported type CHAR %i", data_type);
+      exit(EXIT_FAILURE);
+    case (UINT8):
+      ospSetString(ospVolume, "voxelType", "uchar");
+      ospVoxelData = ospNewData(data_dims.x * data_dims.y * data_dims.z,
+				OSP_UCHAR, data_ptr, OSP_DATA_SHARED_BUFFER);
+      break;
+    case (UINT16):
+      ospSetString(ospVolume, "voxelType", "ushort");
+      // ospSetRegion(ospVolume, data_ptr,
+      // 		   osp::vec3i{0,0,0},
+      // 		   osp::vec3i{(int)data_dims.x, (int)data_dims.y, (int)data_dims.z});
+      ospVoxelData = ospNewData(data_dims.x * data_dims.y * data_dims.z,
+				OSP_USHORT, data_ptr, OSP_DATA_SHARED_BUFFER);
+      break;
+    case (UINT32):
+      fprintf(stderr, "Error: Unsupported type UINT32 %i", data_type);
+      exit(EXIT_FAILURE);
+    case (UINT64):
+      fprintf(stderr, "Error: Unsupported type UINT64 %i", data_type);
+      exit(EXIT_FAILURE);
+    case (INT8):
+      fprintf(stderr, "Error: Unsupported type INT8 %i", data_type);
+      exit(EXIT_FAILURE);
+    case (INT16):
+      ospSetString(ospVolume, "voxelType", "short");
+      ospVoxelData = ospNewData(data_dims.x * data_dims.y * data_dims.z,
+				OSP_SHORT, data_ptr, OSP_DATA_SHARED_BUFFER);
+      break;
+    case (INT32):
+      fprintf(stderr, "Error: Unsupported type INT32 %i", data_type);
+      exit(EXIT_FAILURE);
+    case (FLOAT32):
+      ospSetString(ospVolume, "voxelType", "float");
+      ospVoxelData = ospNewData(data_dims.x * data_dims.y * data_dims.z,
+				OSP_FLOAT, data_ptr, OSP_DATA_SHARED_BUFFER);
+      break;
+    case (DOUBLE64):
+      ospSetString(ospVolume, "voxelType", "double");
+      ospVoxelData = ospNewData(data_dims.x * data_dims.y * data_dims.z,
+				OSP_DOUBLE, data_ptr, OSP_DATA_SHARED_BUFFER);
+      break;
+    default:
+      fprintf(stderr, "Error: Unrecognized type %i", data_type);
+      exit(EXIT_FAILURE);
+    }
+    ospSetData(ospVolume, "voxelData", ospVoxelData);
     ospCommit(ospVolume);
   }
   Timer("finish commit");
