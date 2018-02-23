@@ -118,6 +118,7 @@ void Volume::ComputeGradients() {
   gRange.y = ParallelMax(gData, gRange.y);
   aRange.y = ParallelMax(aData, aRange.y);
   Timer("compute gradient");
+  std::cout << "[ospray] volume max: " << vRange.x << " min: " << vRange.y << std::endl;
 }
 
 void Volume::Init(int argc, const char **argv) {
