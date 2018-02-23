@@ -50,6 +50,10 @@ size_t SizeOf(int data_type)
     return sizeof(int16_t);
   case (INT32):
     return sizeof(int32_t);
+  case (INT64):
+    return sizeof(int64_t);
+  case (FLOAT16):
+    return sizeof(int16_t); // We dont have a half-float in c++ yet. It is just a place holder.
   case (FLOAT32):
     return sizeof(float);
   case (DOUBLE64):
@@ -72,9 +76,10 @@ int ConvertType(const std::string& type)
   else if (type.compare("int16"   ) == 0) { return INT16;    }
   else if (type.compare("int32"   ) == 0) { return INT32;    }
   else if (type.compare("int64"   ) == 0) { return INT64;    }
+  else if (type.compare("float16" ) == 0) { return FLOAT16;  }
   else if (type.compare("float32" ) == 0) { return FLOAT32;  }
   else if (type.compare("double64") == 0) { return DOUBLE64; }
-  else {}
+  else { return 0; }
 }
 
 std::string ParsePath(const std::string& str)
