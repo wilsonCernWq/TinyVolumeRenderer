@@ -152,11 +152,7 @@ void Volume::Init(int argc, const char **argv) {
   //-----------------------------------------------------------------------------------------------------------------//
   Timer();
   {
-    if (data_type == UINT16) {
-      ospVolume = ospNewVolume("block_bricked_volume");
-    } else {
-      ospVolume = ospNewVolume("shared_structured_volume");
-    }
+    ospVolume = ospNewVolume("shared_structured_volume");
     ospSetVec3i(ospVolume, "dimensions", osp::vec3i{(int)data_dims.x, (int)data_dims.y, (int)data_dims.z});
     ospSetVec3f(ospVolume, "gridOrigin", osp::vec3f{-0.5f * data_spacing * data_dims.x,
                                                     -0.5f * data_spacing * data_dims.y,
@@ -177,6 +173,7 @@ void Volume::Init(int argc, const char **argv) {
 				OSP_UCHAR, data_ptr, OSP_DATA_SHARED_BUFFER);
       break;
     case (CHAR):
+      // --> not tested
       fprintf(stderr, "Error: Unsupported type CHAR %i", data_type);
       exit(EXIT_FAILURE);
     case (UINT8):
@@ -186,13 +183,10 @@ void Volume::Init(int argc, const char **argv) {
 				OSP_UCHAR, data_ptr, OSP_DATA_SHARED_BUFFER);
       break;
     case (UINT16):
-      // --> not working
+      // --> working
       ospSetString(ospVolume, "voxelType", "ushort");
-      ospSetRegion(ospVolume, data_ptr,
-      		   osp::vec3i{0,0,0},
-      		   osp::vec3i{(int)data_dims.x, (int)data_dims.y, (int)data_dims.z});
-      // ospVoxelData = ospNewData(data_dims.x * data_dims.y * data_dims.z,
-      // 			   OSP_USHORT, data_ptr, OSP_DATA_SHARED_BUFFER);
+      ospVoxelData = ospNewData(data_dims.x * data_dims.y * data_dims.z,
+      			   OSP_USHORT, data_ptr, OSP_DATA_SHARED_BUFFER);
       break;
     case (UINT32):
       fprintf(stderr, "Error: Unsupported type UINT32 %i", data_type);
@@ -204,7 +198,7 @@ void Volume::Init(int argc, const char **argv) {
       fprintf(stderr, "Error: Unsupported type INT8 %i", data_type);
       exit(EXIT_FAILURE);
     case (INT16):
-      // --> not tested
+      // --> working
       ospSetString(ospVolume, "voxelType", "short");
       ospVoxelData = ospNewData(data_dims.x * data_dims.y * data_dims.z,
 				OSP_SHORT, data_ptr, OSP_DATA_SHARED_BUFFER);
