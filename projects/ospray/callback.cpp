@@ -73,8 +73,9 @@ void RenderWindow(GLFWwindow *window)
     ImGui_ImplGlfwGL3_Init(window, false);
 #ifdef USE_TFN_MODULE
     tfnWidget = std::make_shared<tfn::tfn_widget::TransferFunctionWidget>
-      ([ ]() { return 256; },
-       [&](const std::vector<float> &c, const std::vector<float> &a) {
+      ([&](const std::vector<float> &c, 
+	   const std::vector<float> &a,
+	   const std::array<float, 2> &r) {
          tfn_color_data = c;
          tfn_color_dim[0] = c.size() / 3;
          tfn_color_dim[1] = 1;
@@ -108,7 +109,7 @@ void RenderWindow(GLFWwindow *window)
       UploadOSPRay();
       ImGui_ImplGlfwGL3_NewFrame();
 #ifdef USE_TFN_MODULE
-      if (tfnWidget->drawUI()) { tfnWidget->render(); };
+      if (tfnWidget->drawUI()) { tfnWidget->render(256); };
 #endif
       tfn::tfn_widget::DrawUI();
       ImGui::Render();
