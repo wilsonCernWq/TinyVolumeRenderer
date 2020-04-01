@@ -83,8 +83,7 @@ void VolumeObject::Init()
 void VolumeObject::Draw(const GLint texture_3d, const GLint texture_tf,
 			const float sr, const float step)
 {
-  glUseProgram(program);
-  glEnableVertexAttribArray(vposition_position);
+  check_error_gl("before volume draw");
 
   glBindVertexArray(vertex_array);
   glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
@@ -109,7 +108,6 @@ void VolumeObject::Draw(const GLint texture_3d, const GLint texture_tf,
 
   glBindBuffer(GL_ARRAY_BUFFER, 0);
   glBindVertexArray(0);
-  glDisableVertexAttribArray(vposition_position);
-  glUseProgram(0);
-  check_error_gl("in color rendering");
+
+  check_error_gl("finalize volume draw");
 }
