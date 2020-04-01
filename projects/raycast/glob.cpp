@@ -8,6 +8,7 @@
 #include <cmath>
 #include <algorithm>
 #include <chrono>
+#include <string>
 
 template<class T>
 constexpr const T& clamp( const T& v, const T& lo, const T& hi )
@@ -54,7 +55,7 @@ static int find_idx(const T& A, float p, int l = -1, int r = -1)
   r = r == -1 ? A.size()-1 : r;
   int m = (r + l) / 2;
   if (A[l].p > p) { return l; }
-  else if (A[r].p <= p) { return r+1; }
+  else if (A[r].p <= p) { return r; }
   else if ((m == l) || (m == r)) { return m + 1; }
   else {
     if (A[m].p <= p) { return find_idx(A, p, m, r); }
@@ -366,7 +367,7 @@ void RenderGUI(GLuint tex_tfn_volume)
 
 static const char* read_file(const char* fname)
 {
-  std::ifstream file(fname, std::ios::binary | std::ios::ate);
+  std::ifstream file(fname, std::ios::binary | std::ios::ate | std::ios::in);
   std::streamsize size = file.tellg();
   file.seekg(0, std::ios::beg);
   char* buffer = new char[size+1]; buffer[size] = '\0';

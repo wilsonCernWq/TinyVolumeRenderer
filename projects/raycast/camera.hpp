@@ -1,4 +1,5 @@
 #pragma once
+#include "comm.hpp"
 #ifdef USE_GLM
 # include <glm/fwd.hpp>
 #else

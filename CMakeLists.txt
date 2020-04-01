@@ -26,9 +26,7 @@ include(cmake/common.cmake)
 #
 # load projects
 add_subdirectory(projects/reader)
-add_subdirectory(projects/slice)
 add_subdirectory(projects/raycast)
-add_subdirectory(projects/ospray)
 #
 # install data
 set(COPYLIST ${COMMON_DLLS})

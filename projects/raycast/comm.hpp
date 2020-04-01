@@ -1,7 +1,12 @@
 #pragma once
+
+#define _USE_MATH_DEFINES
+#include <cmath>
+
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <iostream>
+#include <algorithm>
 
 void _glCheckError(const char* file, int line, const char* comment);
 
