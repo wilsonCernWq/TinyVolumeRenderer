@@ -18,7 +18,7 @@
 GLuint
 LoadProgram(const char*, const char*);
 
-void RenderGUI(GLuint);
+void RenderGUI(GLFWwindow*, GLuint);
 
 GLFWwindow*
 InitWindow();

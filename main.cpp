@@ -65,7 +65,7 @@ main(const int argc, const char** argv)
         // render objects
         volume.Draw(texture_3d, texture_tf, sr, stp);
         // render GUI objects
-        RenderGUI(texture_tf);
+        RenderGUI(window, texture_tf);
         // swap frame
         glfwSwapBuffers(window);
         glfwPollEvents();

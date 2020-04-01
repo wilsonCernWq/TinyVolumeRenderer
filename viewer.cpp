@@ -11,7 +11,8 @@
 #include "texture.hpp"
 
 #include <imgui.h>
-#include <imgui_impl_glfw_gl3.h>
+#include <imgui_impl_glfw.h>
+#include <imgui_impl_opengl3.h>
 
 #include <algorithm>
 #include <chrono>
@@ -105,7 +106,7 @@ CapturedByGUI()
 }
 
 static float
-lerp(const float& l, const float& r, const float& pl, const float& pr, const float& p)
+Lerp(const float& l, const float& r, const float& pl, const float& pr, const float& p)
 {
     const float dl = std::abs(pr - pl) > 0.0001f ? (p - pl) / (pr - pl) : 0.f;
     const float dr = 1.f - dl;
@@ -131,9 +132,9 @@ UpdateTFN(GLuint tex_tfn_volume)
             const int   il        = ir - 1;
             const float pr        = tfn_c[ir].p;
             const float pl        = tfn_c[il].p;
-            const float r         = lerp(tfn_c[il].r, tfn_c[ir].r, pl, pr, p);
-            const float g         = lerp(tfn_c[il].g, tfn_c[ir].g, pl, pr, p);
-            const float b         = lerp(tfn_c[il].b, tfn_c[ir].b, pl, pr, p);
+            const float r         = Lerp(tfn_c[il].r, tfn_c[ir].r, pl, pr, p);
+            const float g         = Lerp(tfn_c[il].g, tfn_c[ir].g, pl, pr, p);
+            const float b         = Lerp(tfn_c[il].b, tfn_c[ir].b, pl, pr, p);
             tfn_volume[4 * i + 0] = r;
             tfn_volume[4 * i + 1] = g;
             tfn_volume[4 * i + 2] = b;
@@ -144,7 +145,7 @@ UpdateTFN(GLuint tex_tfn_volume)
             const int   il        = ir - 1;
             const float pr        = tfn_o[ir].p;
             const float pl        = tfn_o[il].p;
-            const float a         = lerp(tfn_o[il].a, tfn_o[ir].a, pl, pr, p);
+            const float a         = Lerp(tfn_o[il].a, tfn_o[ir].a, pl, pr, p);
             tfn_volume[4 * i + 3] = clamp(a, 0.f, 1.f) * 255.f;
         }
     }
@@ -342,9 +343,9 @@ ShowTFNWidget(GLuint tex_tfn_volume)
         const int   il = ir - 1;
         const float pr = tfn_c[ir].p;
         const float pl = tfn_c[il].p;
-        const float r  = lerp(tfn_c[il].r, tfn_c[ir].r, pl, pr, p);
-        const float g  = lerp(tfn_c[il].g, tfn_c[ir].g, pl, pr, p);
-        const float b  = lerp(tfn_c[il].b, tfn_c[ir].b, pl, pr, p);
+        const float r  = Lerp(tfn_c[il].r, tfn_c[ir].r, pl, pr, p);
+        const float g  = Lerp(tfn_c[il].g, tfn_c[ir].g, pl, pr, p);
+        const float b  = Lerp(tfn_c[il].b, tfn_c[ir].b, pl, pr, p);
         tfn_c.insert(tfn_c.begin() + ir, { p, r, g, b });
         tex_tfn_changed = true;
         printf("[GUI] add opacity point at %f with value = (%f, %f, %f)\n", p, r, g, b);
@@ -365,26 +366,42 @@ ShowTFNWidget(GLuint tex_tfn_volume)
     ImGui::End();
 }
 
+bool show_demo_window = true;
+
 void
-RenderGUI(GLuint tex_tfn_volume)
+RenderGUI(GLFWwindow* window, GLuint tex_tfn_volume)
 {
     // Update TFN
     if (tex_tfn_changed) {
         UpdateTFN(tex_tfn_volume);
         tex_tfn_changed = false;
     }
+
     // initialization
-    ImGui_ImplGlfwGL3_NewFrame();
+    ImGui_ImplOpenGL3_NewFrame();
+    ImGui_ImplGlfw_NewFrame();
+    ImGui::NewFrame();
+
+    // ImGui::ShowDemoWindow(&show_demo_window);
+
     // render GUI
     ShowFixedInfoOverlay(true);
     ShowTFNWidget(tex_tfn_volume);
+
+    // rendering
     ImGui::Render();
+    //int display_w, display_h;
+    //glfwGetFramebufferSize(window, &display_w, &display_h);
+    //glViewport(0, 0, display_w, display_h);
+    //glClearColor(clear_color.x, clear_color.y, clear_color.z, clear_color.w);
+    //glClear(GL_COLOR_BUFFER_BIT);
+    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
 
 //---------------------------------------------------------------------------------------
 
 static const char*
-read_file(const char* fname)
+ReadShaderFile(const char* fname)
 {
     std::ifstream   file(fname, std::ios::binary | std::ios::ate | std::ios::in);
     std::streamsize size = file.tellg();
@@ -403,10 +420,9 @@ LoadProgram(const char* vshader_fname, const char* fshader_fname)
 {
     fprintf(stdout, "[shader] reading vertex shader file %s\n", vshader_fname);
     fprintf(stdout, "[shader] reading fragment shader file %s\n", fshader_fname);
-
     GLuint vshader = glCreateShader(GL_VERTEX_SHADER);
     {
-        const char* vshader_text = read_file(vshader_fname);
+        const char* vshader_text = ReadShaderFile(vshader_fname);
         glShaderSource(vshader, 1, &vshader_text, NULL);
         glCompileShader(vshader);
         CheckShaderCompilationLog(vshader, vshader_fname); // check error
@@ -414,7 +430,7 @@ LoadProgram(const char* vshader_fname, const char* fshader_fname)
     }
     GLuint fshader = glCreateShader(GL_FRAGMENT_SHADER);
     {
-        const char* fshader_text = read_file(fshader_fname);
+        const char* fshader_text = ReadShaderFile(fshader_fname);
         glShaderSource(fshader, 1, &fshader_text, NULL);
         glCompileShader(fshader);
         CheckShaderCompilationLog(fshader, fshader_fname); // check error
@@ -480,40 +496,72 @@ window_size_callback(GLFWwindow* window, int width, int height)
 GLFWwindow*
 InitWindow()
 {
-    // Initialize GLFW
-    glfwSetErrorCallback(error_callback);
-    if (!glfwInit()) {
-        exit(EXIT_FAILURE);
-    }
-    // Provide Window Hint
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-    glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
-    // Create Window
-    GLFWwindow* window = glfwCreateWindow(CameraWidth(), CameraHeight(), "Raycast Volume Renderer", NULL, NULL);
-    if (!window) {
-        glfwTerminate();
-        exit(EXIT_FAILURE);
-    }
-    // Callback
-    glfwSetKeyCallback(window, key_callback);
-    glfwSetWindowSizeCallback(window, window_size_callback);
-    glfwSetCursorPosCallback(window, cursor_position_callback);
-    // Ready
-    glfwMakeContextCurrent(window);
-    gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
-    glfwSwapInterval(1);
-    // Setup OpenGL
-    glEnable(GL_DEPTH_TEST);
-    // GUI
+    GLFWwindow* window = NULL;
+
+    // OpenGL Setup
     {
+        // Initialize GLFW
+        glfwSetErrorCallback(error_callback);
+        if (!glfwInit()) {
+            exit(EXIT_FAILURE);
+        }
+
+        // Provide Window Hint
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+        glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+        glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+        glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
+
+        // Create Window
+        window = glfwCreateWindow(CameraWidth(), CameraHeight(), "Raycast Volume Renderer", NULL, NULL);
+        if (!window) {
+            glfwTerminate();
+            exit(EXIT_FAILURE);
+        }
+
+        // Callback
+        glfwSetKeyCallback(window, key_callback);
+        glfwSetWindowSizeCallback(window, window_size_callback);
+        glfwSetCursorPosCallback(window, cursor_position_callback);
+
+        // Ready
+        glfwMakeContextCurrent(window);
+        glfwSwapInterval(1); // Enable vsync
+
+        // gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
+        bool err = gladLoadGL() == 0;
+        if (err) {
+            throw std::runtime_error("Failed to initialize OpenGL loader!");
+        }
+
+        // Setup OpenGL
+        glEnable(GL_DEPTH_TEST);
+    }
+
+    // ImGUI Setup
+    {
+        // Setup Dear ImGui context
+        IMGUI_CHECKVERSION();
+        ImGui::CreateContext();
+        ImGuiIO& io = ImGui::GetIO();
+        (void)io;
+        // io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
+        // io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+
+        // Setup Dear ImGui style
+        ImGui::StyleColorsDark();
+        // ImGui::StyleColorsClassic();
+
         // Initialize GUI
-        ImGui_ImplGlfwGL3_Init(window, false);
+        const char* glsl_version = "#version 150";
+        ImGui_ImplGlfw_InitForOpenGL(window, false);
+        ImGui_ImplOpenGL3_Init(glsl_version);
+
         // Create GUI Objects
         tex_tfn_opaque = loadTFN_custom();
     }
+
     return window;
 }
 
@@ -521,7 +569,10 @@ void
 ShutdownWindow(GLFWwindow* window)
 {
     // Shutup GUI
-    ImGui_ImplGlfwGL3_Shutdown();
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplGlfw_Shutdown();
+    ImGui::DestroyContext();
+
     // Shutup window
     glfwDestroyWindow(window);
 }
