@@ -144,7 +144,7 @@ GLuint loadRAW_custom(const char * volumepath, int& depth)
     exit(-1);
   }
   // Create one OpenGL texture
-  check_error_gl("before texture");
+  check_error_gl("before texture RAW");
   GLuint textureID;
   glGenTextures(1, &textureID);   
   glBindTexture(GL_TEXTURE_3D, textureID);
@@ -168,7 +168,7 @@ GLuint loadRAW_custom(const char * volumepath, int& depth)
 GLuint loadTFN_custom()
 {
   // Create one OpenGL texture
-  check_error_gl("before texture");
+  check_error_gl("before texture TFN");
   GLuint textureID;
   glGenTextures(1, &textureID);   
   glBindTexture(GL_TEXTURE_2D, textureID);

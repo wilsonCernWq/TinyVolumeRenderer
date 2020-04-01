@@ -44,4 +44,4 @@ void main()
       if (color.a >= 0.99) { break; }
     }
   }
-};
+}

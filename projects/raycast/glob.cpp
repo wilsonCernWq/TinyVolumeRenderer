@@ -10,6 +10,28 @@
 #include <chrono>
 #include <string>
 
+void CheckShaderCompilationLog(GLuint shader, const std::string& fname)
+{
+  GLint isCompiled = 0;
+  glGetShaderiv(shader, GL_COMPILE_STATUS, &isCompiled);
+  if(isCompiled == GL_FALSE)
+  {
+    GLint maxLength = 0;
+    glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &maxLength);
+    // The maxLength includes the NULL character
+    std::vector<GLchar> errorLog(maxLength);
+    glGetShaderInfoLog(shader, maxLength, &maxLength, &errorLog[0]);
+    // Provide the infolog in whatever manor you deem best.
+    // Exit with failure.
+    glDeleteShader(shader); // Don't leak the shader.
+    // show the message
+    std::cerr << "compilation error for shader: " << fname
+              << std::endl
+              << errorLog.data()
+              << std::endl;
+  }
+}
+
 template<class T>
 constexpr const T& clamp( const T& v, const T& lo, const T& hi )
 {
@@ -382,20 +404,32 @@ GLuint LoadProgram(const char* vshader_fname, const char* fshader_fname)
 {
   fprintf(stdout, "[shader] reading vertex shader file %s\n", vshader_fname);
   fprintf(stdout, "[shader] reading fragment shader file %s\n", fshader_fname);
+
   GLuint vshader = glCreateShader(GL_VERTEX_SHADER);
-  const char* vshader_text = read_file(vshader_fname);
-  glShaderSource(vshader, 1, &vshader_text, NULL);
-  glCompileShader(vshader);
+  {
+    const char* vshader_text = read_file(vshader_fname);
+    glShaderSource(vshader, 1, &vshader_text, NULL);
+    glCompileShader(vshader);
+    CheckShaderCompilationLog(vshader, vshader_fname); // check error
+    check_error_gl("Compile Vertex Shaders");
+  }
   GLuint fshader = glCreateShader(GL_FRAGMENT_SHADER);
-  const char* fshader_text = read_file(fshader_fname);
-  glShaderSource(fshader, 1, &fshader_text, NULL);
-  glCompileShader(fshader);
+  {
+    const char* fshader_text = read_file(fshader_fname);
+    glShaderSource(fshader, 1, &fshader_text, NULL);
+    glCompileShader(fshader);
+    CheckShaderCompilationLog(fshader, fshader_fname); // check error
+    check_error_gl("Compile Fragment Shaders");
+  }
   GLuint program = glCreateProgram();
+  if (glCreateProgram == 0) throw std::runtime_error("wrong program");
   glAttachShader(program, vshader);
   glAttachShader(program, fshader);
+  check_error_gl("Compile Shaders: Attach");
   glLinkProgram(program);
+  check_error_gl("Compile Shaders: Link");
   glUseProgram(program);
-  check_error_gl("Compile Shaders");
+  check_error_gl("Compile Shaders: Final");
   return program;
 }
 
@@ -436,10 +470,12 @@ GLFWwindow* InitWindow()
   // Initialize GLFW
   glfwSetErrorCallback(error_callback);
   if (!glfwInit()) { exit(EXIT_FAILURE); }
-  // Provide Window Hnits
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
-  glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, true);
+  // Provide Window Hint
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+  glfwWindowHint(GLFW_OPENGL_PROFILE,GLFW_OPENGL_CORE_PROFILE);
+  glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+  glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
   // Create Window
   GLFWwindow* window = glfwCreateWindow(CameraWidth(), CameraHeight(),
 					"Raycast Volume Renderer", NULL, NULL);
@@ -454,7 +490,6 @@ GLFWwindow* InitWindow()
   glfwSwapInterval(1);
   // Setup OpenGL
   glEnable(GL_DEPTH_TEST);
-  glEnable(GL_TEXTURE_3D);
   // GUI
   {
     // Initialize GUI

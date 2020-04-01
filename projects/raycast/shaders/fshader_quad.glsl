@@ -5,4 +5,4 @@ layout(location = 0) out vec4 color;
 void main()
 {
   color = vec4(texture(tex2d, fTexCoord).rgb, 1.0f);
-};
+}
