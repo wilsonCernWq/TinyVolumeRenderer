@@ -1,37 +1,49 @@
+# welcome to ECS 277
 cmake_minimum_required(VERSION 3.0)
-project(VolumeRenderer)
-#
-# options
-OPTION(EMABLE_SHARED "Enable shared Library" OFF)
-if(EMABLE_SHARED) 
-  set(BUILD_SHARED_LIBS ON)
-else(EMABLE_SHARED) 
-  set(BUILD_SHARED_LIBS OFF)
-endif(EMABLE_SHARED)
-#
-# include host specification file
-cmake_host_system_information(RESULT SYSNAME QUERY HOSTNAME)
-message(STATUS "Trying to include ${SYSNAME}.cmake configuration file")
-include(cmake/config-site/${SYSNAME}.cmake OPTIONAL RESULT_VARIABLE CONFIGFOUND)
-if (NOT CONFIGFOUND)
-  message(STATUS "Failed to load the configuration file")
-  message(STATUS "Helper message:\n
-    To build the program sucessfully, you might need to provide following paths to your cmake
-    *) path to the root directory of your standalone TBB library as '-DTBB_ROOT=<..>'       
-  ")
-endif()
-#
+project(ecs277-template)
+
 # load required libraries
 include(cmake/common.cmake)
-#
-# load projects
-add_subdirectory(projects/reader)
-add_subdirectory(projects/raycast)
-#
-# install data
-set(COPYLIST ${COMMON_DLLS})
+
+# install shader
+file(GLOB SHADERS "shaders/*.glsl")
 if(EXECUTABLE_OUTPUT_PATH)
-  DeployRepo("${COPYLIST}" "${EXECUTABLE_OUTPUT_PATH}")
+  deployrepo("${SHADERS}" "${EXECUTABLE_OUTPUT_PATH}/shaders")
 else()
-  DeployRepo("${COPYLIST}" "${CMAKE_BINARY_DIR}")
+  deployrepo("${SHADERS}" "${CMAKE_CURRENT_BINARY_DIR}/shaders")
+endif()
+
+# add program
+add_executable(viewer main.cpp
+  camera.cpp
+  camera.hpp
+  framebuffer.cpp
+  framebuffer.hpp
+  opengl.cpp
+  opengl.hpp
+  quad.cpp
+  quad.hpp
+  reader.cpp
+  reader.hpp
+  texture.cpp
+  texture.hpp
+  trackball.cpp
+  trackball.hpp
+  viewer.cpp
+  viewer.hpp
+  volume_object.cpp
+  volume_object.hpp)
+target_include_directories(viewer PUBLIC ${CMAKE_CURRENT_LIST_DIR})
+target_link_libraries(viewer PUBLIC ${COMMON_LIBS})
+set_target_properties(viewer PROPERTIES
+  ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
+  LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
+  RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
+  CXX_STANDARD 11)
+
+# install dlls
+if(EXECUTABLE_OUTPUT_PATH)
+  deployrepo("${COMMON_DLLS}" "${EXECUTABLE_OUTPUT_PATH}")
+else()
+  deployrepo("${COMMON_DLLS}" "${CMAKE_CURRENT_BINARY_DIR}")
 endif()
