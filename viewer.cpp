@@ -42,11 +42,11 @@ CheckShaderCompilationLog(GLuint shader, const std::string& fname)
 
 template<class T>
 constexpr const T&
-clamp(const T& v, const T& lo, const T& hi)
+Clamp(const T& v, const T& lo, const T& hi)
 {
     return std::min(hi, std::max(lo, v));
 }
-//---------------------------------------------------------------------------------------
+
 static GLuint tex_tfn_changed = true;
 static GLuint tex_tfn_opaque  = -1;
 struct ColorPoint {
@@ -74,7 +74,7 @@ static std::vector<OpacityPoint> tfn_o = { { 0.00f, 0.00 },
 
 template<typename T>
 static int
-find_idx(const T& A, float p, int l = -1, int r = -1)
+FindIdx(const T& A, float p, int l = -1, int r = -1)
 {
     l     = l == -1 ? 0 : l;
     r     = r == -1 ? A.size() - 1 : r;
@@ -90,10 +90,10 @@ find_idx(const T& A, float p, int l = -1, int r = -1)
     }
     else {
         if (A[m].p <= p) {
-            return find_idx(A, p, m, r);
+            return FindIdx(A, p, m, r);
         }
         else {
-            return find_idx(A, p, l, m);
+            return FindIdx(A, p, l, m);
         }
     }
 }
@@ -125,10 +125,10 @@ UpdateTFN(GLuint tex_tfn_volume)
     // interpolate volume texture
 #pragma omp parallel for
     for (int i = 0; i < tfn_h; ++i) {
-        const float p = clamp(i / (float)(tfn_h - 1), 0.0f, 1.0f);
+        const float p = Clamp(i / (float)(tfn_h - 1), 0.0f, 1.0f);
         // color
         {
-            const int   ir        = find_idx(tfn_c, p);
+            const int   ir        = FindIdx(tfn_c, p);
             const int   il        = ir - 1;
             const float pr        = tfn_c[ir].p;
             const float pl        = tfn_c[il].p;
@@ -141,12 +141,12 @@ UpdateTFN(GLuint tex_tfn_volume)
         }
         // opacity
         {
-            const int   ir        = find_idx(tfn_o, p);
+            const int   ir        = FindIdx(tfn_o, p);
             const int   il        = ir - 1;
             const float pr        = tfn_o[ir].p;
             const float pl        = tfn_o[il].p;
             const float a         = Lerp(tfn_o[il].a, tfn_o[ir].a, pl, pr, p);
-            tfn_volume[4 * i + 3] = clamp(a, 0.f, 1.f) * 255.f;
+            tfn_volume[4 * i + 3] = Clamp(a, 0.f, 1.f) * 255.f;
         }
     }
     // interpolate opaque palette
@@ -278,7 +278,7 @@ ShowTFNWidget(GLuint tex_tfn_volume)
                 ImVec2 delta = ImGui::GetIO().MouseDelta;
                 if (i > 0 && i < tfn_c.size() - 1) {
                     tfn_c[i].p += delta.x / width;
-                    tfn_c[i].p = clamp(tfn_c[i].p, tfn_c[i - 1].p, tfn_c[i + 1].p);
+                    tfn_c[i].p = Clamp(tfn_c[i].p, tfn_c[i - 1].p, tfn_c[i + 1].p);
                 }
                 tex_tfn_changed = true;
             }
@@ -325,10 +325,10 @@ ShowTFNWidget(GLuint tex_tfn_volume)
             if (ImGui::IsItemActive()) {
                 ImVec2 delta = ImGui::GetIO().MouseDelta;
                 tfn_o[i].a -= delta.y / height;
-                tfn_o[i].a = clamp(tfn_o[i].a, 0.0f, 1.0f);
+                tfn_o[i].a = Clamp(tfn_o[i].a, 0.0f, 1.0f);
                 if (i > 0 && i < tfn_o.size() - 1) {
                     tfn_o[i].p += delta.x / width;
-                    tfn_o[i].p = clamp(tfn_o[i].p, tfn_o[i - 1].p, tfn_o[i + 1].p);
+                    tfn_o[i].p = Clamp(tfn_o[i].p, tfn_o[i - 1].p, tfn_o[i + 1].p);
                 }
                 tex_tfn_changed = true;
             }
@@ -338,8 +338,8 @@ ShowTFNWidget(GLuint tex_tfn_volume)
     ImGui::SetCursorScreenPos(ImVec2(canvas_x + margin, canvas_y - margin));
     ImGui::InvisibleButton("tfn_palette", ImVec2(width, 2.5 * color_len));
     if (ImGui::IsItemClicked(1) && !delete_point) {
-        const float p  = clamp((mouse_x - canvas_x - margin - scroll_x) / (float)width, 0.f, 1.f);
-        const int   ir = find_idx(tfn_c, p);
+        const float p  = Clamp((mouse_x - canvas_x - margin - scroll_x) / (float)width, 0.f, 1.f);
+        const int   ir = FindIdx(tfn_c, p);
         const int   il = ir - 1;
         const float pr = tfn_c[ir].p;
         const float pl = tfn_c[il].p;
@@ -355,9 +355,9 @@ ShowTFNWidget(GLuint tex_tfn_volume)
     ImGui::SetCursorScreenPos(ImVec2(canvas_x + margin, canvas_y - height - margin));
     ImGui::InvisibleButton("tfn_palette", ImVec2(width, height));
     if (ImGui::IsItemClicked(1) && !delete_point) {
-        const float x   = clamp((mouse_x - canvas_x - margin - scroll_x) / (float)width, 0.f, 1.f);
-        const float y   = clamp(-(mouse_y - canvas_y + margin - scroll_y) / (float)height, 0.f, 1.f);
-        const int   idx = find_idx(tfn_o, x);
+        const float x   = Clamp((mouse_x - canvas_x - margin - scroll_x) / (float)width, 0.f, 1.f);
+        const float y   = Clamp(-(mouse_y - canvas_y + margin - scroll_y) / (float)height, 0.f, 1.f);
+        const int   idx = FindIdx(tfn_o, x);
         tfn_o.insert(tfn_o.begin() + idx, { x, y });
         tex_tfn_changed = true;
         printf("[GUI] add opacity point at %f with value = %f\n", x, y);
@@ -365,8 +365,6 @@ ShowTFNWidget(GLuint tex_tfn_volume)
     ImGui::SetCursorScreenPos(ImVec2(canvas_x, canvas_y));
     ImGui::End();
 }
-
-bool show_demo_window = true;
 
 void
 RenderGUI(GLFWwindow* window, GLuint tex_tfn_volume)
@@ -382,6 +380,8 @@ RenderGUI(GLFWwindow* window, GLuint tex_tfn_volume)
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
 
+    // Show demo window
+    // static bool show_demo_window = true;
     // ImGui::ShowDemoWindow(&show_demo_window);
 
     // render GUI
@@ -390,11 +390,6 @@ RenderGUI(GLFWwindow* window, GLuint tex_tfn_volume)
 
     // rendering
     ImGui::Render();
-    //int display_w, display_h;
-    //glfwGetFramebufferSize(window, &display_w, &display_h);
-    //glViewport(0, 0, display_w, display_h);
-    //glClearColor(clear_color.x, clear_color.y, clear_color.z, clear_color.w);
-    //glClear(GL_COLOR_BUFFER_BIT);
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
 
@@ -452,13 +447,13 @@ LoadProgram(const char* vshader_fname, const char* fshader_fname)
 //---------------------------------------------------------------------------------------
 
 static void
-error_callback(int error, const char* description)
+ErrorCallback(int error, const char* description)
 {
     fprintf(stderr, "Error: %s\n", description);
 }
 
 static void
-key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
+KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
         glfwSetWindowShouldClose(window, GLFW_TRUE);
@@ -466,7 +461,7 @@ key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
 }
 
 static void
-cursor_position_callback(GLFWwindow* window, double xpos, double ypos)
+CursorPositionCallback(GLFWwindow* window, double xpos, double ypos)
 {
     if (!CapturedByGUI()) {
         int left_state  = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT);
@@ -487,7 +482,7 @@ cursor_position_callback(GLFWwindow* window, double xpos, double ypos)
 }
 
 static void
-window_size_callback(GLFWwindow* window, int width, int height)
+WindowSizeCallback(GLFWwindow* window, int width, int height)
 {
     glViewport(0, 0, width, height);
     CameraUpdateProjection(width, height);
@@ -501,7 +496,7 @@ InitWindow()
     // OpenGL Setup
     {
         // Initialize GLFW
-        glfwSetErrorCallback(error_callback);
+        glfwSetErrorCallback(ErrorCallback);
         if (!glfwInit()) {
             exit(EXIT_FAILURE);
         }
@@ -517,20 +512,20 @@ InitWindow()
         window = glfwCreateWindow(CameraWidth(), CameraHeight(), "Raycast Volume Renderer", NULL, NULL);
         if (!window) {
             glfwTerminate();
-            exit(EXIT_FAILURE);
+            throw std::runtime_error("Failed to create GLFW window");
         }
 
         // Callback
-        glfwSetKeyCallback(window, key_callback);
-        glfwSetWindowSizeCallback(window, window_size_callback);
-        glfwSetCursorPosCallback(window, cursor_position_callback);
+        glfwSetKeyCallback(window, KeyCallback);
+        glfwSetWindowSizeCallback(window, WindowSizeCallback);
+        glfwSetCursorPosCallback(window, CursorPositionCallback);
 
         // Ready
         glfwMakeContextCurrent(window);
         glfwSwapInterval(1); // Enable vsync
 
-        // gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
-        bool err = gladLoadGL() == 0;
+        // Load GLAD symbols
+        int err = gladLoadGLLoader((GLADloadproc)glfwGetProcAddress) == 0;
         if (err) {
             throw std::runtime_error("Failed to initialize OpenGL loader!");
         }
@@ -544,18 +539,13 @@ InitWindow()
         // Setup Dear ImGui context
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
-        ImGuiIO& io = ImGui::GetIO();
-        (void)io;
-        // io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
-        // io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
 
         // Setup Dear ImGui style
-        ImGui::StyleColorsDark();
-        // ImGui::StyleColorsClassic();
+        ImGui::StyleColorsDark(); // or ImGui::StyleColorsClassic();
 
-        // Initialize GUI
+        // Initialize Dear ImGui
         const char* glsl_version = "#version 150";
-        ImGui_ImplGlfw_InitForOpenGL(window, false);
+        ImGui_ImplGlfw_InitForOpenGL(window, false /* do not use ImGui callbacks */);
         ImGui_ImplOpenGL3_Init(glsl_version);
 
         // Create GUI Objects
@@ -568,11 +558,11 @@ InitWindow()
 void
 ShutdownWindow(GLFWwindow* window)
 {
-    // Shutup GUI
+    // Shut GUI
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
 
-    // Shutup window
+    // Shut window
     glfwDestroyWindow(window);
 }
