@@ -191,6 +191,18 @@ ParseJSON(const std::string& fname)
 bool
 ParseRaw(void*& data_ptr, int& data_size)
 {
+    // allocate buffers for input data
+    const auto voxel_size = SizeOf(VolumeInfo::type);
+    // data sizes and buffers for the input data
+    const auto nbyte_per_line = (uint64_t)VolumeInfo::size.x * (uint64_t)voxel_size;
+    const auto num_of_lines   = (uint64_t)VolumeInfo::size.y * (uint64_t)VolumeInfo::size.z;
+    // allocate buffers for pitched data (resize data to factor of 16)
+    const uint64_t factor            = 4; // why 16? I am not sure. I cannot find any documentation about this number.
+    const uint64_t pitched_x         = (uint64_t)std::ceil(VolumeInfo::size.x / (float)factor) * factor;
+    const uint64_t pitched_y         = (uint64_t)std::ceil(VolumeInfo::size.y / (float)factor) * factor;
+    const uint64_t pitched_z         = (uint64_t)std::ceil(VolumeInfo::size.z / (float)factor) * factor;
+    const auto     pitched_data_size = pitched_x * pitched_y * pitched_z * (uint64_t)voxel_size;
+    char*          pitched_data_ptr  = new char[pitched_data_size](); // zero initialize the array!
     // open file
     std::string   fname = (VolumeInfo::dpath + VolumeInfo::fname);
     std::ifstream in(fname.c_str(), std::ios::in | std::ios::binary);
@@ -205,11 +217,24 @@ ParseRaw(void*& data_ptr, int& data_size)
         fprintf(stderr, "Error: Data buffer is not empty\n");
         return false;
     }
-    // allocate data buffer
-    const int unit_size = SizeOf(VolumeInfo::type);
-    data_size           = VolumeInfo::size.x * VolumeInfo::size.y * VolumeInfo::size.z * unit_size;
-    data_ptr            = new char[data_size];
-    in.read((char*)data_ptr, data_size);
+    // count the size of file
+    in.seekg(0, in.end);
+    uint64_t length = in.tellg();
+    in.seekg(0, in.beg);
+    // sanity check
+    if (length != (nbyte_per_line * num_of_lines))
+        throw std::runtime_error("file size is different from the expected data size.");
+    // read data
+    for (int i = 0; i < num_of_lines; ++i) {
+        in.read(&pitched_data_ptr[i * pitched_x], nbyte_per_line);
+    }
+    in.close();
+    // return values
+    data_ptr           = pitched_data_ptr;
+    data_size          = pitched_data_size;
+    VolumeInfo::size.x = pitched_x;
+    VolumeInfo::size.y = pitched_y;
+    VolumeInfo::size.z = pitched_z;
     return true;
 }
 
@@ -226,5 +251,6 @@ ReadVolume(const char* fname, int& data_type, int& data_size, int& data_X, int& 
     data_X    = VolumeInfo::size.x;
     data_Y    = VolumeInfo::size.y;
     data_Z    = VolumeInfo::size.z;
+    fprintf(stdout, "[raw] pitched size: %i, %i, %i\n", VolumeInfo::size.x, VolumeInfo::size.y, VolumeInfo::size.z);
     return true;
 }
