@@ -52,7 +52,7 @@ static const float position_buffer_data[] = {
 void VolumeObject::Init()
 {
   // Compile Simple Shaders  
-  program = LoadProgram("shaders/vshader_raycast.glsl","shaders/fshader_raycast.glsl");
+  program = LoadProgram("raycast_vshader.glsl","raycast_fshader.glsl");
   ASSERT(program != 0, "Failed to create program");
   vposition_position = glGetAttribLocation(program, "vPosition");
   ASSERT(vposition_position != -1, "Failed to find 'vPosition' location");

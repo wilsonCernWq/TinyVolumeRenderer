@@ -6,15 +6,20 @@ project(ecs277-template)
 include(cmake/common.cmake)
 
 # install shader
-file(GLOB SHADERS "shaders/*.glsl")
+set(SHADERS 
+  quad_vshader.glsl 
+  quad_fshader.glsl
+  renderer/raycast_vshader.glsl
+  renderer/raycast_fshader.glsl)
 if(EXECUTABLE_OUTPUT_PATH)
-  deployrepo("${SHADERS}" "${EXECUTABLE_OUTPUT_PATH}/shaders")
+  deployrepo("${SHADERS}" "${EXECUTABLE_OUTPUT_PATH}")
 else()
-  deployrepo("${SHADERS}" "${CMAKE_CURRENT_BINARY_DIR}/shaders")
+  deployrepo("${SHADERS}" "${CMAKE_CURRENT_BINARY_DIR}")
 endif()
 
 # add program
 add_executable(viewer main.cpp
+  ${SHADERS}
   camera.cpp
   camera.hpp
   framebuffer.cpp
@@ -31,8 +36,8 @@ add_executable(viewer main.cpp
   trackball.hpp
   viewer.cpp
   viewer.hpp
-  volume_object.cpp
-  volume_object.hpp)
+  renderer/volume_object.cpp
+  renderer/volume_object.hpp)
 target_include_directories(viewer PUBLIC ${CMAKE_CURRENT_LIST_DIR})
 target_link_libraries(viewer PUBLIC ${COMMON_LIBS})
 set_target_properties(viewer PROPERTIES

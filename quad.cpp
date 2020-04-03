@@ -15,7 +15,7 @@ static float vertex_buffer_data[] = {
 void
 ScreenObject::Init()
 {
-    program = LoadProgram("shaders/vshader_quad.glsl", "shaders/fshader_quad.glsl");
+    program = LoadProgram("quad_vshader.glsl", "quad_fshader.glsl");
     ASSERT(program != 0, "Failed to create program");
 
     glGenVertexArrays(1, &vertex_array);

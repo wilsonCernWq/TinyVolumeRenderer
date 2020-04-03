@@ -12,7 +12,7 @@
 #include "reader.hpp"
 #include "viewer.hpp"
 #include "texture.hpp"
-#include "volume_object.hpp"
+#include "renderer/volume_object.hpp"
 #include <vector>
 
 static FrameBufferObject fbo;
