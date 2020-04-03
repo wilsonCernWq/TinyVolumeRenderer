@@ -7,10 +7,10 @@ include(cmake/common.cmake)
 
 # install shader
 set(SHADERS 
+  #renderer/raycast_vshader.glsl
+  #renderer/raycast_fshader.glsl
   quad_vshader.glsl 
-  quad_fshader.glsl
-  renderer/raycast_vshader.glsl
-  renderer/raycast_fshader.glsl)
+  quad_fshader.glsl)
 if(EXECUTABLE_OUTPUT_PATH)
   deployrepo("${SHADERS}" "${EXECUTABLE_OUTPUT_PATH}")
 else()
@@ -20,6 +20,8 @@ endif()
 # add program
 add_executable(viewer main.cpp
   ${SHADERS}
+  #renderer/volume_object.cpp
+  #renderer/volume_object.hpp
   camera.cpp
   camera.hpp
   framebuffer.cpp
@@ -35,9 +37,7 @@ add_executable(viewer main.cpp
   trackball.cpp
   trackball.hpp
   viewer.cpp
-  viewer.hpp
-  renderer/volume_object.cpp
-  renderer/volume_object.hpp)
+  viewer.hpp)
 target_include_directories(viewer PUBLIC ${CMAKE_CURRENT_LIST_DIR})
 target_link_libraries(viewer PUBLIC ${COMMON_LIBS})
 set_target_properties(viewer PROPERTIES
