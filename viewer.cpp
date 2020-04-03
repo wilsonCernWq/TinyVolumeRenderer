@@ -17,28 +17,10 @@
 #include <algorithm>
 #include <chrono>
 #include <cmath>
-#include <fstream>
 #include <string>
 #include <vector>
 
-void
-CheckShaderCompilationLog(GLuint shader, const std::string& fname)
-{
-    GLint isCompiled = 0;
-    glGetShaderiv(shader, GL_COMPILE_STATUS, &isCompiled);
-    if (isCompiled == GL_FALSE) {
-        GLint maxLength = 0;
-        glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &maxLength);
-        // The maxLength includes the NULL character
-        std::vector<GLchar> errorLog(maxLength);
-        glGetShaderInfoLog(shader, maxLength, &maxLength, &errorLog[0]);
-        // Provide the infolog in whatever manor you deem best.
-        // Exit with failure.
-        glDeleteShader(shader); // Don't leak the shader.
-        // show the message
-        std::cerr << "compilation error for shader: " << fname << std::endl << errorLog.data() << std::endl;
-    }
-}
+//---------------------------------------------------------------------------------------
 
 template<class T>
 constexpr const T&
@@ -194,11 +176,12 @@ ShowFixedInfoOverlay(bool open)
         fps = frames / elapsed_seconds.count();
     opened = open;
     //--------------------------------
-    const float DISTANCE         = 10.0f;
-    static int  corner           = 0;
-    ImVec2      window_pos       = ImVec2((corner & 1) ? ImGui::GetIO().DisplaySize.x - DISTANCE : DISTANCE,
-                               (corner & 2) ? ImGui::GetIO().DisplaySize.y - DISTANCE : DISTANCE);
-    ImVec2      window_pos_pivot = ImVec2((corner & 1) ? 1.0f : 0.0f, (corner & 2) ? 1.0f : 0.0f);
+    const float DISTANCE   = 10.0f;
+    static int  corner     = 0;
+    ImVec2      window_pos = //
+      ImVec2((corner & 1) ? ImGui::GetIO().DisplaySize.x - DISTANCE : DISTANCE,
+             (corner & 2) ? ImGui::GetIO().DisplaySize.y - DISTANCE : DISTANCE);
+    ImVec2 window_pos_pivot = ImVec2((corner & 1) ? 1.0f : 0.0f, (corner & 2) ? 1.0f : 0.0f);
     ImGui::SetNextWindowPos(window_pos, ImGuiCond_Always, window_pos_pivot);
     // Transparent background
     ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.0f, 0.0f, 0.0f, 0.3f));
@@ -366,6 +349,8 @@ ShowTFNWidget(GLuint tex_tfn_volume)
     ImGui::End();
 }
 
+//---------------------------------------------------------------------------------------
+
 void
 RenderGUI(GLFWwindow* window, GLuint tex_tfn_volume)
 {
@@ -375,73 +360,20 @@ RenderGUI(GLFWwindow* window, GLuint tex_tfn_volume)
         tex_tfn_changed = false;
     }
 
-    // initialization
+    // Initialization
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
 
-    // Show demo window
+    // - Uncomment below to show ImGui demo window
     // static bool show_demo_window = true;
     // ImGui::ShowDemoWindow(&show_demo_window);
 
-    // render GUI
+    // Render GUI
     ShowFixedInfoOverlay(true);
     ShowTFNWidget(tex_tfn_volume);
-
-    // rendering
     ImGui::Render();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-}
-
-//---------------------------------------------------------------------------------------
-
-static const char*
-ReadShaderFile(const char* fname)
-{
-    std::ifstream   file(fname, std::ios::binary | std::ios::ate | std::ios::in);
-    std::streamsize size = file.tellg();
-    file.seekg(0, std::ios::beg);
-    char* buffer = new char[size + 1];
-    buffer[size] = '\0';
-    if (!file.read(const_cast<char*>(buffer), size)) {
-        fprintf(stderr, "Error: Cannot read file %s\n", fname);
-        exit(-1);
-    }
-    return buffer;
-}
-
-GLuint
-LoadProgram(const char* vshader_fname, const char* fshader_fname)
-{
-    fprintf(stdout, "[shader] reading vertex shader file %s\n", vshader_fname);
-    fprintf(stdout, "[shader] reading fragment shader file %s\n", fshader_fname);
-    GLuint vshader = glCreateShader(GL_VERTEX_SHADER);
-    {
-        const char* vshader_text = ReadShaderFile(vshader_fname);
-        glShaderSource(vshader, 1, &vshader_text, NULL);
-        glCompileShader(vshader);
-        CheckShaderCompilationLog(vshader, vshader_fname); // check error
-        check_error_gl("Compile Vertex Shaders");
-    }
-    GLuint fshader = glCreateShader(GL_FRAGMENT_SHADER);
-    {
-        const char* fshader_text = ReadShaderFile(fshader_fname);
-        glShaderSource(fshader, 1, &fshader_text, NULL);
-        glCompileShader(fshader);
-        CheckShaderCompilationLog(fshader, fshader_fname); // check error
-        check_error_gl("Compile Fragment Shaders");
-    }
-    GLuint program = glCreateProgram();
-    if (glCreateProgram == 0)
-        throw std::runtime_error("wrong program");
-    glAttachShader(program, vshader);
-    glAttachShader(program, fshader);
-    check_error_gl("Compile Shaders: Attach");
-    glLinkProgram(program);
-    check_error_gl("Compile Shaders: Link");
-    glUseProgram(program);
-    check_error_gl("Compile Shaders: Final");
-    return program;
 }
 
 //---------------------------------------------------------------------------------------
@@ -554,6 +486,8 @@ InitWindow()
 
     return window;
 }
+
+//---------------------------------------------------------------------------------------
 
 void
 ShutdownWindow(GLFWwindow* window)

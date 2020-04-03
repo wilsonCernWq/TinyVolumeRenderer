@@ -51,3 +51,6 @@ _glCheckError(const char* file, int line, const char* comment);
     do {                         \
     } while (false)
 #endif
+
+GLuint
+LoadProgram(const char*, const char*);

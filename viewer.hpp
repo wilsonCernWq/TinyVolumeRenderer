@@ -15,13 +15,11 @@
 #error "GLM is required here"
 #endif
 
-GLuint
-LoadProgram(const char*, const char*);
-
-void RenderGUI(GLFWwindow*, GLuint);
-
 GLFWwindow*
 InitWindow();
+
+void
+RenderGUI(GLFWwindow*, GLuint);
 
 void
 ShutdownWindow(GLFWwindow*);
