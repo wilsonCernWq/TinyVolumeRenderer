@@ -1,59 +1,33 @@
-# Raycasting Volume Renderer #
+# ECS 277 GUI Interface #
 
-## How you solved this assignment ##
+This repository provides a software infrastructure for building graphics user interfaces.
 
-I implemented this assignment using one rendering pass.
 
-For each iteration:
+## Dependencies ##
 
-1. I use the bounding box of the volume as the geometry and render normally
+In this code, GLFW and GLAD are used for setting up OpenGL. GLM is used as the math implementation. The Dear ImGui library is used for constructing GUI components. LodePNG and RapidJSON are also included for image and file I/O.
 
-2. I also pass the camera position in screen coordinate as a uniform constant into the shader
-
-3. In the fragment shader I calculate the ray direction and origin based on the vertex
-coordinate and the camera position.
-
-4. I do normal ray-box intersection to find the starting and ending position.
-
-5. I do front-to-back ray composition for each ray using a for loop
-
-6. I write the output color into the screen.
-
-## What resources you used ##
-
-I used GLM and GLFW internally, I used their sample program to setup 3D textures in
-OpenGL. I also used the method I learned in ray-tracing class inside this assignment.
-
-## Any known bugs in your assignment ##
-
-My renderer can load [NEGHIP](data/neghip.json) dataset correctly, 
-but it cannot read [CSAFE](data/csafe_heptane.json) dataset for some readons.
 
 ## How to Compile ##
 
-The program requires OpenGL 4+ with 3D texture support. I don't recommend running it on Mac. I have tested it on Linux (Ubuntu and CentOS 7) machines. [Need a Linux ?](HELPME.md)
+The program requires OpenGL 3.3+ with 3D texture support. It also uses CMake for building.
 
 ```
 mkdir build
 cd build
-cmake .. -DCMAKE_BUILD_TYPE=Release
+cmake ..
 make -j8
 ```
 
-## How to Run ##
 
-```
-cd build
-./viewer_raycast ../data/neghip.json -sr <sampling-rate>
-```
-
-## How to control it ##
+## Interaction ##
 
 Use left mouse click to rotate 
 
 Use right mouse click to zoom.
 
-## how to change the transfer function ##
+
+## Transfer Function ##
 
 * Left click gray dots to adjust control color/opacity points.
 
@@ -62,9 +36,3 @@ Use right mouse click to zoom.
 * Check the 'delete point' box and right click on control points to remove them.
 
 * Left click on the colored square to change color map color.
-
-## Rendered Images ##
-
-See assets folder
-
-![alt text](projects/raycast/assets/neghip.png "Neghip")
