@@ -182,8 +182,8 @@ ParseJSON(const std::string& fname)
     fprintf(stdout, "[json]     name: %s\n", VolumeInfo::name.c_str());
     fprintf(stdout, "[json]     type: %i\n", VolumeInfo::type);
     fprintf(stdout, "[json]     size: %i, %i, %i\n", VolumeInfo::size.x, VolumeInfo::size.y, VolumeInfo::size.z);
-    fprintf(stdout, "[json]     spacing: %f, %f, %f\n", VolumeInfo::spacing.x, VolumeInfo::spacing.y,
-            VolumeInfo::spacing.z);
+    fprintf(stdout, "[json]     spacing: %f, %f, %f\n", 
+            VolumeInfo::spacing.x, VolumeInfo::spacing.y, VolumeInfo::spacing.z);
     fprintf(stdout, "[json]     data file: %s\n", VolumeInfo::fname.c_str());
     return true;
 }
@@ -225,9 +225,9 @@ ParseRaw(void*& data_ptr, int& data_size)
     if (length != (nbyte_per_line * num_of_lines))
         throw std::runtime_error("file size is different from the expected data size.");
     // read data
-    for (int i = 0; i < num_of_lines; ++i) {
-        in.read(&pitched_data_ptr[i * pitched_x], nbyte_per_line);
-    }
+    for (int z = 0; z < VolumeInfo::size.z; ++z)
+        for (int y = 0; y < VolumeInfo::size.y; ++y)
+            in.read(&pitched_data_ptr[(y * pitched_x + z * pitched_y * pitched_x) * voxel_size], nbyte_per_line);
     in.close();
     // return values
     data_ptr           = pitched_data_ptr;
@@ -243,10 +243,10 @@ ReadVolume(const char* fname, int& data_type, int& data_size, int& data_X, int& 
 {
     if (!ParseJSON(fname)) {
         return false;
-    };
+    }
     if (!ParseRaw(data_ptr, data_size)) {
         return false;
-    };
+    }
     data_type = VolumeInfo::type;
     data_X    = VolumeInfo::size.x;
     data_Y    = VolumeInfo::size.y;
