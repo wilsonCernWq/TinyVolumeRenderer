@@ -6,6 +6,9 @@
 //                                                                           //
 //===========================================================================//
 
+// force imgui to use GLAD
+#define IMGUI_IMPL_OPENGL_LOADER_GLAD
+
 #include "viewer.hpp"
 #include "camera.hpp"
 #include "texture.hpp"
