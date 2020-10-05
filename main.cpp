@@ -12,12 +12,12 @@
 #include "reader.hpp"
 #include "viewer.hpp"
 #include "texture.hpp"
-//#include "renderer/volume_object.hpp"
+#include "renderer/volume_object.hpp"
 #include <vector>
 
 static FrameBufferObject fbo;
 static ScreenObject      screen;
-//static VolumeObject      volume;
+static VolumeObject      volume;
 
 int
 main(const int argc, const char** argv)
@@ -55,7 +55,7 @@ main(const int argc, const char** argv)
     // Initialize Objects
     fbo.Init(CameraWidth(), CameraHeight(), 1);
     screen.Init();
-    //volume.Init();
+    volume.Init();
 
     // parameters
     const float stp = 1.f / depth / sr; // raycasting step
@@ -63,7 +63,7 @@ main(const int argc, const char** argv)
     while (!glfwWindowShouldClose(window)) {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         // render objects
-        //volume.Draw(texture_3d, texture_tf, sr, stp);
+        volume.Draw(texture_3d, texture_tf, sr, stp);
         // render GUI objects
         RenderGUI(window, texture_tf);
         // swap frame
