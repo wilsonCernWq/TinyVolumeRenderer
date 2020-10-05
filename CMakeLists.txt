@@ -7,8 +7,8 @@ include(cmake/common.cmake)
 
 # install shader
 set(SHADERS 
-  renderer/raycast_vshader.glsl
-  renderer/raycast_fshader.glsl
+  #renderer/raycast_vshader.glsl
+  #renderer/raycast_fshader.glsl
   quad_vshader.glsl 
   quad_fshader.glsl)
 if(EXECUTABLE_OUTPUT_PATH)
@@ -20,8 +20,8 @@ endif()
 # add program
 add_executable(viewer main.cpp
   ${SHADERS}
-  renderer/volume_object.cpp
-  renderer/volume_object.hpp
+  #renderer/volume_object.cpp
+  #renderer/volume_object.hpp
   camera.cpp
   camera.hpp
   framebuffer.cpp
